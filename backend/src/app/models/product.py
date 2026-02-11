@@ -22,6 +22,7 @@ class Product(Base):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text)
     launch_date: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    features: Mapped[Optional[str]] = mapped_column(Text)  # JSON list of feature strings
 
     company_id: Mapped[str] = mapped_column(ForeignKey("companies.id"))
     company: Mapped["Company"] = relationship(back_populates="products")

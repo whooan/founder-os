@@ -6,8 +6,9 @@ import {
   Building2,
   LayoutDashboard,
   Clock,
-  Network,
+  GitCompareArrows,
   MessageSquare,
+  Star,
 } from "lucide-react";
 import {
   CommandDialog,
@@ -65,6 +66,9 @@ export function CommandMenu({ open, onOpenChange }: CommandMenuProps) {
               >
                 <Building2 className="mr-2 h-4 w-4" />
                 <span>{company.name}</span>
+                {company.is_primary && (
+                  <Star className="ml-1 h-3 w-3 text-amber-500 fill-amber-500" />
+                )}
                 {company.stage && (
                   <span className="ml-auto text-xs text-muted-foreground">
                     {company.stage}
@@ -90,9 +94,9 @@ export function CommandMenu({ open, onOpenChange }: CommandMenuProps) {
             <Clock className="mr-2 h-4 w-4" />
             <span>Timeline</span>
           </CommandItem>
-          <CommandItem onSelect={() => navigate("/market")}>
-            <Network className="mr-2 h-4 w-4" />
-            <span>Market Map</span>
+          <CommandItem onSelect={() => navigate("/compare")}>
+            <GitCompareArrows className="mr-2 h-4 w-4" />
+            <span>Compare</span>
           </CommandItem>
           <CommandItem onSelect={() => navigate("/ask")}>
             <MessageSquare className="mr-2 h-4 w-4" />

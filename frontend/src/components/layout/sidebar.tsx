@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   Building2,
   Clock,
+  GitCompareArrows,
   Network,
   MessageSquare,
 } from "lucide-react";
@@ -15,7 +16,7 @@ const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/companies", label: "Companies", icon: Building2 },
   { href: "/timeline", label: "Timeline", icon: Clock },
-  { href: "/market", label: "Market Map", icon: Network },
+  { href: "/compare", label: "Compare", icon: GitCompareArrows },
   { href: "/ask", label: "Ask Intelligence", icon: MessageSquare },
 ];
 

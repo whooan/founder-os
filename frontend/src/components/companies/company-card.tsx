@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Building2 } from "lucide-react";
+import { Building2, Star } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -28,6 +28,12 @@ export function CompanyCard({ company }: CompanyCardProps) {
             <CardTitle className="text-base font-semibold">
               {company.name}
             </CardTitle>
+            {company.is_primary && (
+              <Badge className="bg-amber-500/10 text-amber-600 border-amber-200 text-[10px] px-1.5 py-0">
+                <Star className="mr-0.5 h-2.5 w-2.5 fill-current" />
+                Mine
+              </Badge>
+            )}
           </div>
           <PipelineStatusBadge status={company.status} />
         </CardHeader>

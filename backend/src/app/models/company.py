@@ -10,12 +10,15 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base
 
 if TYPE_CHECKING:
+    from app.models.company_digest import CompanyDigest
     from app.models.data_source import DataSource
     from app.models.event import Event
     from app.models.founder import Founder
     from app.models.funding_round import FundingRound
     from app.models.market_category import MarketCategory
     from app.models.product import Product
+    from app.models.competitor_client import CompetitorClient
+    from app.models.social_post import SocialPost
 
 
 class Company(Base):
@@ -34,6 +37,8 @@ class Company(Base):
     stage: Mapped[Optional[str]] = mapped_column(String(50))
     one_liner: Mapped[Optional[str]] = mapped_column(String(500))
     status: Mapped[str] = mapped_column(String(20), default="active")
+    is_primary: Mapped[bool] = mapped_column(default=False)
+    social_handles: Mapped[Optional[str]] = mapped_column(Text)  # JSON: {"linkedin": "...", "twitter": "..."}
 
     media_tone: Mapped[Optional[str]] = mapped_column(Text)
     posting_frequency: Mapped[Optional[str]] = mapped_column(Text)
@@ -42,6 +47,14 @@ class Company(Base):
     gtm_strategy: Mapped[Optional[str]] = mapped_column(Text)
     key_differentiators: Mapped[Optional[str]] = mapped_column(Text)
     risk_signals: Mapped[Optional[str]] = mapped_column(Text)
+
+    # Client intelligence fields
+    icp_analysis: Mapped[Optional[str]] = mapped_column(Text)  # JSON
+    geography_analysis: Mapped[Optional[str]] = mapped_column(Text)  # JSON
+    industry_focus: Mapped[Optional[str]] = mapped_column(Text)  # JSON
+
+    # 360° crosscheck result (structured JSON)
+    crosscheck_result: Mapped[Optional[str]] = mapped_column(Text)  # JSON
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now()
@@ -67,4 +80,13 @@ class Company(Base):
     )
     categories: Mapped[list["MarketCategory"]] = relationship(
         secondary="company_categories", back_populates="companies"
+    )
+    social_posts: Mapped[list["SocialPost"]] = relationship(
+        back_populates="company", cascade="all, delete-orphan"
+    )
+    digests: Mapped[list["CompanyDigest"]] = relationship(
+        back_populates="company", cascade="all, delete-orphan"
+    )
+    competitor_clients: Mapped[list["CompetitorClient"]] = relationship(
+        back_populates="company", cascade="all, delete-orphan"
     )

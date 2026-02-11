@@ -13,5 +13,7 @@ class DataSourceRead(BaseModel):
     source_type: str
     content_snippet: Optional[str] = None
     last_fetched: Optional[datetime] = None
+    raw_content_md: Optional[str] = None
+    is_custom: bool = False
     company_id: str
     created_at: datetime

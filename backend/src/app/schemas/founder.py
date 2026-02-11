@@ -28,3 +28,11 @@ class FounderRead(BaseModel):
             except (json.JSONDecodeError, TypeError):
                 return None
         return v
+
+
+class FounderUpdate(BaseModel):
+    name: Optional[str] = None
+    title: Optional[str] = None
+    linkedin_url: Optional[str] = None
+    twitter_handle: Optional[str] = None
+    bio: Optional[str] = None

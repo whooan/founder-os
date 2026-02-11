@@ -5,7 +5,7 @@ export async function askIntelligence(
   question: string,
   companyId?: string
 ): Promise<AskResponse> {
-  return apiFetch<AskResponse>("/ask", {
+  return apiFetch<AskResponse>("/intelligence/ask", {
     method: "POST",
     body: JSON.stringify({ question, company_id: companyId }),
   });

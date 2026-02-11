@@ -25,6 +25,8 @@ class DataSource(Base):
     content_snippet: Mapped[Optional[str]] = mapped_column(Text)
     raw_content: Mapped[Optional[str]] = mapped_column(Text)
     last_fetched: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    raw_content_md: Mapped[Optional[str]] = mapped_column(Text)  # Markdown version
+    is_custom: Mapped[bool] = mapped_column(default=False)  # True if user-added
 
     company_id: Mapped[str] = mapped_column(ForeignKey("companies.id"))
     company: Mapped["Company"] = relationship(back_populates="data_sources")

@@ -16,6 +16,15 @@ def _format_company_context(company: Company) -> str:
     """Format a company's data as context for the AI."""
     parts = [f"## {company.name}"]
 
+    if company.is_primary:
+        parts.append("**Role:** Primary (Your Company)")
+    if company.domain:
+        parts.append(f"**Domain:** {company.domain}")
+    if company.founded_year:
+        parts.append(f"**Founded:** {company.founded_year}")
+    if company.employee_range:
+        parts.append(f"**Employees:** {company.employee_range}")
+
     if company.one_liner:
         parts.append(f"**One-liner:** {company.one_liner}")
     if company.description:
@@ -96,6 +105,137 @@ def _format_company_context(company: Company) -> str:
             source_lines.append(f"- [{label}]({ds.url})")
         parts.append("**Research Sources:**\n" + "\n".join(source_lines))
 
+    # Products with features
+    if company.products:
+        product_lines = []
+        for p in company.products:
+            line = f"- {p.name}"
+            if p.description:
+                line += f": {p.description}"
+            if p.features:
+                try:
+                    feats = json.loads(p.features)
+                    if feats:
+                        line += f"\n  Features: {', '.join(feats)}"
+                except (json.JSONDecodeError, TypeError):
+                    pass
+            product_lines.append(line)
+        parts.append("**Products:**\n" + "\n".join(product_lines))
+
+    # Market categories
+    if company.categories:
+        cat_names = [c.name for c in company.categories]
+        parts.append(f"**Market Categories:** {', '.join(cat_names)}")
+
+    # Media tone
+    if company.media_tone:
+        try:
+            tone = json.loads(company.media_tone)
+            tone_parts = [f"{k}: {v}" for k, v in tone.items()]
+            parts.append("**Media Tone:** " + "; ".join(tone_parts))
+        except (json.JSONDecodeError, TypeError):
+            pass
+
+    # Posting frequency
+    if company.posting_frequency:
+        parts.append(f"**Posting Frequency:** {company.posting_frequency}")
+
+    # Social posts
+    if company.social_posts:
+        post_lines = []
+        for sp in company.social_posts[:20]:
+            snippet = (sp.content[:200] + "...") if sp.content and len(sp.content) > 200 else (sp.content or "")
+            line = f"- [{sp.platform}] {snippet}"
+            if sp.url:
+                line += f" ({sp.url})"
+            post_lines.append(line)
+        parts.append("**Social Posts:**\n" + "\n".join(post_lines))
+
+    # Competitor clients
+    if company.competitor_clients:
+        client_lines = []
+        for cc in company.competitor_clients:
+            line = f"- {cc.client_name}"
+            details = []
+            if cc.industry:
+                details.append(f"industry: {cc.industry}")
+            if cc.region:
+                details.append(f"region: {cc.region}")
+            if cc.company_size:
+                details.append(f"size: {cc.company_size}")
+            if cc.relationship_type:
+                details.append(f"type: {cc.relationship_type}")
+            if cc.confidence:
+                details.append(f"confidence: {cc.confidence}")
+            if details:
+                line += f" ({', '.join(details)})"
+            client_lines.append(line)
+        parts.append("**Known Clients:**\n" + "\n".join(client_lines))
+
+    # ICP analysis
+    if company.icp_analysis:
+        try:
+            icp = json.loads(company.icp_analysis)
+            icp_lines = []
+            if icp.get("buyer_persona"):
+                icp_lines.append(f"Buyer Persona: {icp['buyer_persona']}")
+            if icp.get("target_segments"):
+                icp_lines.append(f"Target Segments: {', '.join(icp['target_segments'])}")
+            if icp.get("ideal_company_size"):
+                icp_lines.append(f"Ideal Company Size: {icp['ideal_company_size']}")
+            if icp.get("ideal_industries"):
+                icp_lines.append(f"Ideal Industries: {', '.join(icp['ideal_industries'])}")
+            if icp.get("pain_points"):
+                icp_lines.append(f"Pain Points: {', '.join(icp['pain_points'])}")
+            if icp.get("buying_criteria"):
+                icp_lines.append(f"Buying Criteria: {', '.join(icp['buying_criteria'])}")
+            if icp_lines:
+                parts.append("**ICP Analysis:**\n" + "\n".join(f"- {l}" for l in icp_lines))
+        except (json.JSONDecodeError, TypeError):
+            pass
+
+    # Geography analysis
+    if company.geography_analysis:
+        try:
+            geo = json.loads(company.geography_analysis)
+            geo_lines = []
+            if geo.get("hq_region"):
+                geo_lines.append(f"HQ Region: {geo['hq_region']}")
+            if geo.get("primary_markets"):
+                geo_lines.append(f"Primary Markets: {', '.join(geo['primary_markets'])}")
+            if geo.get("expansion_markets"):
+                geo_lines.append(f"Expansion Markets: {', '.join(geo['expansion_markets'])}")
+            if geo.get("market_presence_notes"):
+                geo_lines.append(f"Notes: {geo['market_presence_notes']}")
+            if geo_lines:
+                parts.append("**Geography:**\n" + "\n".join(f"- {l}" for l in geo_lines))
+        except (json.JSONDecodeError, TypeError):
+            pass
+
+    # Industry focus
+    if company.industry_focus:
+        try:
+            ind = json.loads(company.industry_focus)
+            ind_lines = []
+            if ind.get("primary_industries"):
+                ind_lines.append(f"Primary: {', '.join(ind['primary_industries'])}")
+            if ind.get("secondary_industries"):
+                ind_lines.append(f"Secondary: {', '.join(ind['secondary_industries'])}")
+            if ind.get("vertical_strength"):
+                ind_lines.append(f"Vertical Strength: {ind['vertical_strength']}")
+            if ind.get("industry_notes"):
+                ind_lines.append(f"Notes: {ind['industry_notes']}")
+            if ind_lines:
+                parts.append("**Industry Focus:**\n" + "\n".join(f"- {l}" for l in ind_lines))
+        except (json.JSONDecodeError, TypeError):
+            pass
+
+    # Digests (full markdown — the richest synthesized intelligence)
+    if company.digests:
+        for d in company.digests:
+            type_label = d.digest_type.replace("_", " ").title()
+            parts.append(f"**Digest ({type_label}):**\n{d.digest_markdown}")
+
     return "\n\n".join(parts)
 
 
@@ -125,9 +265,9 @@ async def ask_intelligence(
             else:
                 logger.warning(f"Ask: company {query.company_id} not found")
         else:
-            # Search for relevant companies based on the question
-            companies = await service.search(query.question[:100])
-            for c in companies[:5]:
+            # Load ALL tracked companies with full relations
+            all_companies = await service.list_all(limit=100)
+            for c in all_companies:
                 full = await service.get_by_id(c.id)
                 if full:
                     context_parts.append(_format_company_context(full))
@@ -166,3 +306,46 @@ async def ask_intelligence(
     except Exception as e:
         logger.exception(f"Ask endpoint error: {e}")
         raise
+
+
+async def compare_chat(query, session):
+    """Chat with full context of compared companies using GPT-4.1."""
+    from app.schemas.intelligence import CompareResponse
+
+    service = CompanyService(session)
+    companies = await service.get_comparison_data(query.company_ids)
+
+    if not companies:
+        return CompareResponse(answer="No companies found for comparison.", sources=[])
+
+    # Build comprehensive context
+    context_parts = []
+    all_sources = []
+    for company in companies:
+        ctx = _format_company_context(company)
+        primary_label = " [PRIMARY - YOUR COMPANY]" if company.is_primary else ""
+        context_parts.append(f"## {company.name}{primary_label}\n\n{ctx}")
+        if hasattr(company, 'data_sources') and company.data_sources:
+            for ds in company.data_sources[:10]:
+                all_sources.append({"label": ds.title or ds.url, "url": ds.url})
+
+    context = "\n\n---\n\n".join(context_parts)
+
+    from app.intelligence.prompts import COMPARISON_SYSTEM_PROMPT
+    messages = [
+        {"role": "system", "content": COMPARISON_SYSTEM_PROMPT},
+        {"role": "system", "content": f"COMPARISON DATA:\n\n{context}"},
+        {"role": "user", "content": query.question},
+    ]
+
+    answer = await chat_completion(messages, model="gpt-4.1")
+
+    # Deduplicate sources
+    seen = set()
+    unique_sources = []
+    for s in all_sources:
+        if s["url"] not in seen:
+            seen.add(s["url"])
+            unique_sources.append(s)
+
+    return CompareResponse(answer=answer, sources=unique_sources[:20])
