@@ -41,6 +41,8 @@ class CompanyRead(BaseModel):
     founder_count: int = 0
     event_count: int = 0
     funding_round_count: int = 0
+    data_version: int = 0
+    last_enriched_at: Optional[datetime] = None
 
     @field_validator("social_handles", mode="before")
     @classmethod

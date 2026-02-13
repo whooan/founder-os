@@ -6,6 +6,9 @@ import type {
   CompetitorClient,
   SocialPost,
   CompanyDigest,
+  EnrichmentSnapshot,
+  ConsolidatedComparisonData,
+  QuadrantData,
 } from "@/types";
 
 export async function fetchCompanies(): Promise<Company[]> {
@@ -164,4 +167,41 @@ export async function findPotentialClients(
   return apiFetch(`/companies/${companyId}/find-potential-clients`, {
     method: "POST",
   });
+}
+
+// ── Versioning ──────────────────────────────────────────────
+
+export async function bulkUpdate(): Promise<{
+  status: string;
+  count: number;
+}> {
+  return apiFetch("/companies/bulk-update", { method: "POST" });
+}
+
+export async function fetchSnapshots(
+  companyId: string
+): Promise<EnrichmentSnapshot[]> {
+  return apiFetch<EnrichmentSnapshot[]>(
+    `/companies/${companyId}/snapshots`
+  );
+}
+
+// ── Consolidated Feature Comparison ─────────────────────────
+
+export async function fetchConsolidatedComparison(
+  ids: string[]
+): Promise<ConsolidatedComparisonData> {
+  return apiFetch<ConsolidatedComparisonData>(
+    `/companies/compare/consolidated?ids=${ids.join(",")}`
+  );
+}
+
+// ── Quadrant Visualization ──────────────────────────────────
+
+export async function fetchQuadrantData(
+  ids: string[]
+): Promise<QuadrantData> {
+  return apiFetch<QuadrantData>(
+    `/companies/compare/quadrant?ids=${ids.join(",")}`
+  );
 }

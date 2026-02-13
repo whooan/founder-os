@@ -3,6 +3,7 @@ from typing import Optional
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.models.event import Event
 
@@ -18,9 +19,9 @@ class EventService:
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
         skip: int = 0,
-        limit: int = 100,
+        limit: int = 200,
     ) -> list[Event]:
-        stmt = select(Event)
+        stmt = select(Event).options(selectinload(Event.company))
 
         if company_id:
             stmt = stmt.where(Event.company_id == company_id)

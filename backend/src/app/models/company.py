@@ -12,6 +12,7 @@ from app.models.base import Base
 if TYPE_CHECKING:
     from app.models.company_digest import CompanyDigest
     from app.models.data_source import DataSource
+    from app.models.enrichment_snapshot import EnrichmentSnapshot
     from app.models.event import Event
     from app.models.founder import Founder
     from app.models.funding_round import FundingRound
@@ -56,6 +57,10 @@ class Company(Base):
     # 360° crosscheck result (structured JSON)
     crosscheck_result: Mapped[Optional[str]] = mapped_column(Text)  # JSON
 
+    # Versioning
+    data_version: Mapped[int] = mapped_column(default=0)
+    last_enriched_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now()
     )
@@ -88,5 +93,8 @@ class Company(Base):
         back_populates="company", cascade="all, delete-orphan"
     )
     competitor_clients: Mapped[list["CompetitorClient"]] = relationship(
+        back_populates="company", cascade="all, delete-orphan"
+    )
+    snapshots: Mapped[list["EnrichmentSnapshot"]] = relationship(
         back_populates="company", cascade="all, delete-orphan"
     )

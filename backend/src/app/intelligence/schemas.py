@@ -184,3 +184,72 @@ class PotentialClientsResult(BaseModel):
     potential_clients: list[PotentialClient] = []
     methodology: str = ""
     sources: list[SourceReference] = []
+
+
+# ── Feature Consolidation (Compare) ─────────────────────────
+
+class ConsolidatedFeature(BaseModel):
+    canonical_name: str  # e.g., "OCR / Document Recognition"
+    original_names: list[str] = []
+    category: str = ""  # "common", "my_unique", "competitor_unique", "partial"
+    companies_with_feature: list[str] = []  # company IDs that have it
+
+
+class ConsolidatedFeatureResult(BaseModel):
+    features: list[ConsolidatedFeature] = []
+    summary: str = ""
+
+
+# ── Quadrant Visualization ───────────────────────────────────
+
+class AxisPair(BaseModel):
+    x_label: str
+    y_label: str
+    description: str = ""
+
+
+class CompanyScore(BaseModel):
+    company_id: str
+    company_name: str
+    x_score: float  # 0-100
+    y_score: float  # 0-100
+    rationale: str = ""
+
+
+class QuadrantResult(BaseModel):
+    axis_pairs: list[AxisPair] = []
+    scores: dict[str, list[CompanyScore]] = {}  # keyed by "x_label|y_label"
+
+
+# ── CEO Suggestions ──────────────────────────────────────────
+
+class SuggestedClient(BaseModel):
+    company_name: str
+    domain: Optional[str] = None
+    country: str = ""
+    industry: str = ""
+    why_good_fit: str = ""
+    source_competitor_client: Optional[str] = None
+    confidence: str = "medium"
+
+
+class ProductSuggestion(BaseModel):
+    suggestion: str
+    rationale: str = ""
+    priority: str = "medium"  # high, medium, low
+    source_evidence: str = ""
+
+
+class CEOBriefingItem(BaseModel):
+    title: str
+    content: str = ""
+    category: str = ""  # risk, opportunity, competitor_move, market_shift
+    urgency: str = "medium"
+
+
+class SuggestionsResult(BaseModel):
+    potential_customers: list[SuggestedClient] = []
+    product_suggestions: list[ProductSuggestion] = []
+    ceo_briefing: list[CEOBriefingItem] = []
+    analysis_date: str = ""
+    summary: str = ""

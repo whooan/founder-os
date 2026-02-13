@@ -308,6 +308,66 @@ async def ask_intelligence(
         raise
 
 
+async def ask_intelligence_with_history(
+    question: str,
+    company_id: str | None,
+    history: list[dict],
+    session: AsyncSession,
+) -> AskResponse:
+    """Ask with conversation history for multi-turn context."""
+    try:
+        service = CompanyService(session)
+        context_parts: list[str] = []
+        all_sources: list[dict] = []
+
+        if company_id:
+            company = await service.get_by_id(company_id)
+            if company:
+                context_parts.append(_format_company_context(company))
+                for ds in company.data_sources:
+                    all_sources.append({"label": ds.title or ds.url, "url": ds.url})
+        else:
+            all_companies = await service.list_all(limit=100)
+            for c in all_companies:
+                full = await service.get_by_id(c.id)
+                if full:
+                    context_parts.append(_format_company_context(full))
+                    for ds in full.data_sources:
+                        all_sources.append({"label": ds.title or ds.url, "url": ds.url})
+
+        context = (
+            "\n\n---\n\n".join(context_parts)
+            if context_parts
+            else "No company data available."
+        )
+
+        # Build messages array with conversation history
+        messages: list[dict] = [
+            {"role": "system", "content": ASK_SYSTEM_PROMPT},
+            {"role": "system", "content": f"CONTEXT DATA:\n\n{context}"},
+        ]
+        # Add conversation history (exclude the last user message — we add it fresh)
+        for msg in history[:-1]:
+            messages.append({"role": msg["role"], "content": msg["content"]})
+        messages.append({"role": "user", "content": question})
+
+        answer = await chat_completion(messages)
+
+        # Deduplicate sources
+        seen_urls: set[str] = set()
+        unique_sources: list[dict] = []
+        for s in all_sources:
+            if s["url"] not in seen_urls:
+                seen_urls.add(s["url"])
+                unique_sources.append(s)
+
+        return AskResponse(answer=answer, sources=unique_sources[:20])
+
+    except Exception as e:
+        logger.exception(f"Ask with history error: {e}")
+        raise
+
+
 async def compare_chat(query, session):
     """Chat with full context of compared companies using GPT-4.1."""
     from app.schemas.intelligence import CompareResponse

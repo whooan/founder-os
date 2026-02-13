@@ -16,6 +16,8 @@ export interface Company {
   founder_count: number;
   event_count: number;
   funding_round_count: number;
+  data_version: number;
+  last_enriched_at: string | null;
 }
 
 export interface CompanyDetail extends Company {
@@ -87,6 +89,8 @@ export interface TimelineEvent {
   sentiment: string | null;
   significance: number | null;
   company_id: string;
+  company_name: string;
+  company_domain: string | null;
   raw_content: string | null;
 }
 
@@ -236,4 +240,98 @@ export function safeArray(value: unknown): string[] {
     }
   }
   return [];
+}
+
+// ── Versioning ──────────────────────────────────────────────
+
+export interface EnrichmentSnapshot {
+  id: string;
+  version: number;
+  snapshot_data: Record<string, unknown>;
+  changes_summary: string | null;
+  created_at: string | null;
+}
+
+// ── Consolidated Feature Comparison ─────────────────────────
+
+export interface ConsolidatedFeature {
+  canonical_name: string;
+  original_names: string[];
+  category: "common" | "my_unique" | "competitor_unique" | "partial";
+  companies_with_feature: string[];
+}
+
+export interface ConsolidatedComparisonData {
+  companies: CompanyDetail[];
+  consolidated_features: ConsolidatedFeature[];
+  summary: string;
+  primary_company_id: string | null;
+}
+
+// ── Quadrant Visualization ──────────────────────────────────
+
+export interface AxisPair {
+  x_label: string;
+  y_label: string;
+  description: string;
+}
+
+export interface CompanyScore {
+  company_id: string;
+  company_name: string;
+  x_score: number;
+  y_score: number;
+  rationale: string;
+}
+
+export interface QuadrantData {
+  axis_pairs: AxisPair[];
+  scores: Record<string, CompanyScore[]>;
+  primary_company_id: string | null;
+}
+
+// ── Conversations ───────────────────────────────────────────
+
+export interface Conversation {
+  id: string;
+  title: string;
+  company_id: string | null;
+  message_count?: number;
+  messages?: ChatMessage[];
+  created_at: string;
+  updated_at: string;
+}
+
+// ── CEO Suggestions ─────────────────────────────────────────
+
+export interface SuggestedClient {
+  company_name: string;
+  domain: string | null;
+  country: string;
+  industry: string;
+  why_good_fit: string;
+  source_competitor_client: string | null;
+  confidence: string;
+}
+
+export interface ProductSuggestion {
+  suggestion: string;
+  rationale: string;
+  priority: string;
+  source_evidence: string;
+}
+
+export interface CEOBriefingItem {
+  title: string;
+  content: string;
+  category: "risk" | "opportunity" | "competitor_move" | "market_shift";
+  urgency: string;
+}
+
+export interface SuggestionsData {
+  potential_customers: SuggestedClient[];
+  product_suggestions: ProductSuggestion[];
+  ceo_briefing: CEOBriefingItem[];
+  analysis_date: string;
+  summary: string;
 }

@@ -22,7 +22,9 @@ from app.intelligence.research import (
     SearchResult,
     SourceDocument,
     fetch_and_extract,
+    fetch_company_client_pages,
     research_company_full,
+    search_company_clients,
 )
 from app.models.company import Company
 from app.models.company_digest import CompanyDigest
@@ -43,6 +45,11 @@ async def run_full_enrichment(company_id: str) -> None:
             return
 
         company_name = company.name
+
+        # Snapshot current state before clearing (only if previously enriched)
+        if company.data_version and company.data_version > 0:
+            logger.info("Snapshotting v%d for %s ...", company.data_version, company_name)
+            await service.create_snapshot(company_id)
 
         # Clear previous enrichment data to prevent duplicates on re-run
         logger.info("Clearing previous enrichment data for %s ...", company_name)
@@ -98,10 +105,26 @@ async def run_full_enrichment(company_id: str) -> None:
             intel = await run_market_intel(company_name, web_context)
             await service.apply_market_intel(company_id, intel)
 
-            # -- Step 5b: Client Intelligence pipeline --
-            logger.info("Running client intelligence for %s ...", company_name)
+            # -- Step 5b: Client Intelligence pipeline (with dedicated search) --
+            logger.info("Running dedicated client search for %s ...", company_name)
+            import asyncio
+            client_search_results = await asyncio.to_thread(
+                search_company_clients, company_name, company.domain if company else None
+            )
+            client_docs = await fetch_and_extract(client_search_results)
+            # Also scrape the company's own client-related pages
+            company = await service.get_by_id(company_id)
+            if company and company.domain:
+                website_client_docs = await fetch_company_client_pages(company.domain)
+                client_docs.extend(website_client_docs)
+            # Build enriched context for client intelligence
+            client_context = ResearchContext(
+                sources=web_context.sources + client_docs
+            )
+            logger.info("Running client intelligence for %s (%d client sources)...",
+                        company_name, len(client_docs))
             from app.intelligence.pipelines.client_intelligence import run_client_intelligence
-            client_intel = await run_client_intelligence(company_name, web_context)
+            client_intel = await run_client_intelligence(company_name, client_context)
             await service.apply_client_intelligence(company_id, client_intel)
 
             # -- Step 6: Product features pipeline --
@@ -138,8 +161,17 @@ async def run_full_enrichment(company_id: str) -> None:
                 await service.store_digest(company_id, crosscheck_md, "crosscheck")
                 await service.apply_crosscheck(company_id, crosscheck_result)
 
+            # Bump version and set enrichment timestamp
+            co_stmt = select(Company).where(Company.id == company_id)
+            co_result = await session.execute(co_stmt)
+            co = co_result.scalar_one_or_none()
+            if co:
+                co.data_version = (co.data_version or 0) + 1
+                co.last_enriched_at = datetime.now(timezone.utc)
+                await session.commit()
+
             await service.set_status(company_id, "enriched")
-            logger.info("Enrichment complete for %s", company_name)
+            logger.info("Enrichment complete for %s (v%d)", company_name, co.data_version if co else 0)
 
         except Exception:
             logger.exception("Enrichment failed for %s", company_name)
@@ -213,6 +245,12 @@ async def run_incremental_update(company_id: str) -> None:
             return
 
         company_name = company.name
+
+        # Snapshot before incremental update
+        if company.data_version and company.data_version > 0:
+            logger.info("Snapshotting v%d for %s ...", company.data_version, company_name)
+            await service.create_snapshot(company_id)
+
         await service.set_status(company_id, "running")
 
         try:
@@ -324,8 +362,17 @@ async def run_incremental_update(company_id: str) -> None:
             else:
                 logger.info("No new data found for %s, skipping digest rerun", company_name)
 
+            # Bump version and set enrichment timestamp
+            co_stmt = select(Company).where(Company.id == company_id)
+            co_result = await session.execute(co_stmt)
+            co = co_result.scalar_one_or_none()
+            if co:
+                co.data_version = (co.data_version or 0) + 1
+                co.last_enriched_at = datetime.now(timezone.utc)
+                await session.commit()
+
             await service.set_status(company_id, "enriched")
-            logger.info("Incremental update complete for %s", company_name)
+            logger.info("Incremental update complete for %s (v%d)", company_name, co.data_version if co else 0)
 
         except Exception:
             logger.exception("Incremental update failed for %s", company_name)
@@ -372,9 +419,24 @@ async def run_intelligence_rerun(company_id: str) -> None:
             intel = await run_market_intel(company_name, web_context)
             await service.apply_market_intel(company_id, intel)
 
-            logger.info("Re-running client intelligence for %s ...", company_name)
+            # Dedicated client search + enriched context
+            import asyncio
+            company = await service.get_by_id(company_id)
+            client_search_results = await asyncio.to_thread(
+                search_company_clients, company_name,
+                company.domain if company else None,
+            )
+            client_docs = await fetch_and_extract(client_search_results)
+            if company and company.domain:
+                website_client_docs = await fetch_company_client_pages(company.domain)
+                client_docs.extend(website_client_docs)
+            client_context = ResearchContext(
+                sources=web_context.sources + client_docs
+            )
+            logger.info("Re-running client intelligence for %s (%d client sources)...",
+                        company_name, len(client_docs))
             from app.intelligence.pipelines.client_intelligence import run_client_intelligence
-            client_intel = await run_client_intelligence(company_name, web_context)
+            client_intel = await run_client_intelligence(company_name, client_context)
             await service.apply_client_intelligence(company_id, client_intel)
 
             logger.info("Re-running product features for %s ...", company_name)
@@ -779,3 +841,119 @@ async def run_potential_clients_analysis(primary_company_id: str) -> None:
         digest_md = "\n".join(md_parts)
         await service.store_digest(primary_company_id, digest_md, "potential_clients")
         logger.info("Potential clients analysis complete for %s", primary.name)
+
+
+async def run_suggestions_generation(company_id: str) -> None:
+    """Generate CEO suggestions based on all available competitive intelligence."""
+    async with async_session() as session:
+        service = CompanyService(session)
+        primary = await service.get_by_id(company_id)
+        if not primary:
+            logger.error("Primary company %s not found", company_id)
+            return
+
+        # Load all companies
+        all_companies = await service.list_all(limit=100)
+
+        # Build comprehensive context
+        parts = [f"# Primary Company: {primary.name}"]
+        parts.append(_format_company_for_suggestions(primary))
+
+        # Add competitor data with clients
+        for comp_summary in all_companies:
+            if comp_summary.id == company_id:
+                continue
+            comp = await service.get_by_id(comp_summary.id)
+            if comp:
+                parts.append(f"\n# Competitor: {comp.name}")
+                parts.append(_format_company_for_suggestions(comp))
+
+        context = "\n\n".join(parts)
+
+        logger.info("Generating CEO suggestions for %s ...", primary.name)
+
+        from app.intelligence.openai_client import structured_completion
+        from app.intelligence.prompts import SUGGESTIONS_PROMPT
+        from app.intelligence.schemas import SuggestionsResult
+
+        result = await structured_completion(
+            system_prompt=SUGGESTIONS_PROMPT,
+            user_prompt=context,
+            response_model=SuggestionsResult,
+            model="gpt-4.1",
+        )
+
+        # Store as JSON in a digest
+        result.analysis_date = datetime.now(timezone.utc).isoformat()
+
+        # Delete previous suggestions digest
+        from app.models.company_digest import CompanyDigest as CD
+        from sqlalchemy import delete as sql_delete
+
+        await session.execute(
+            sql_delete(CD).where(
+                CD.company_id == company_id, CD.digest_type == "suggestions"
+            )
+        )
+        await session.commit()
+
+        await service.store_digest(
+            company_id, json.dumps(result.model_dump()), "suggestions"
+        )
+        logger.info("Suggestions generation complete for %s", primary.name)
+
+
+def _format_company_for_suggestions(company: Company) -> str:
+    """Build compact context for suggestions generation."""
+    parts = []
+    if company.description:
+        parts.append(f"Description: {company.description}")
+    if company.one_liner:
+        parts.append(f"One-liner: {company.one_liner}")
+    if company.positioning_summary:
+        parts.append(f"Positioning: {company.positioning_summary}")
+    if company.gtm_strategy:
+        parts.append(f"GTM: {company.gtm_strategy}")
+    if company.hq_location:
+        parts.append(f"HQ: {company.hq_location}")
+
+    if company.products:
+        for p in company.products:
+            line = f"Product: {p.name}"
+            if p.features:
+                try:
+                    feats = json.loads(p.features) if isinstance(p.features, str) else p.features
+                    line += f" — Features: {', '.join(feats)}"
+                except (json.JSONDecodeError, TypeError):
+                    pass
+            parts.append(line)
+
+    if company.competitor_clients:
+        client_lines = []
+        for c in company.competitor_clients:
+            line = c.client_name
+            if c.industry:
+                line += f" ({c.industry})"
+            if c.region:
+                line += f" - {c.region}"
+            client_lines.append(line)
+        parts.append(f"Known Clients: {', '.join(client_lines)}")
+
+    if company.icp_analysis:
+        parts.append(f"ICP: {company.icp_analysis}")
+
+    if company.events:
+        recent = sorted(
+            company.events,
+            key=lambda e: e.event_date or datetime.min,
+            reverse=True,
+        )[:5]
+        event_lines = [f"[{e.event_type}] {e.title}" for e in recent]
+        parts.append("Recent Events: " + "; ".join(event_lines))
+
+    if company.key_differentiators:
+        parts.append(f"Differentiators: {company.key_differentiators}")
+    if company.risk_signals:
+        parts.append(f"Risks: {company.risk_signals}")
+
+    return "\n".join(parts)

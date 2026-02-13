@@ -1,3 +1,5 @@
+import json as _json
+
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 
 from app.api.deps import get_company_service
@@ -35,6 +37,20 @@ async def list_companies(
     return await service.list_all(skip=skip, limit=limit)
 
 
+@router.post("/bulk-update", status_code=202)
+async def bulk_update(
+    background_tasks: BackgroundTasks,
+    service: CompanyService = Depends(get_company_service),
+):
+    """Trigger incremental update for ALL companies."""
+    companies = await service.list_all(limit=100)
+    from app.intelligence.orchestrator import run_incremental_update
+
+    for company in companies:
+        background_tasks.add_task(run_incremental_update, company.id)
+    return {"status": "accepted", "count": len(companies)}
+
+
 @router.get("/compare")
 async def compare_companies(
     ids: str,
@@ -46,7 +62,6 @@ async def compare_companies(
     companies = await service.get_comparison_data(company_ids)
 
     # Build feature matrix
-    import json as _json
     feature_matrix: dict[str, dict[str, bool]] = {}
     for company in companies:
         for product in company.products:
@@ -77,6 +92,104 @@ async def compare_companies(
         "companies": companies,
         "feature_matrix": feature_matrix,
         "primary_company_id": primary_id,
+    }
+
+
+@router.get("/compare/consolidated")
+async def compare_consolidated(
+    ids: str,
+    service: CompanyService = Depends(get_company_service),
+):
+    """Compare companies with AI-consolidated feature matrix."""
+    company_ids = [i.strip() for i in ids.split(",") if i.strip()]
+    if not company_ids:
+        raise HTTPException(status_code=400, detail="No company IDs provided")
+    companies = await service.get_comparison_data(company_ids)
+
+    # Build raw feature data per company
+    company_features: dict[str, list[str]] = {}
+    primary_id = None
+    for company in companies:
+        if company.is_primary:
+            primary_id = company.id
+        feats: list[str] = []
+        for product in company.products:
+            if product.features:
+                try:
+                    parsed = (
+                        _json.loads(product.features)
+                        if isinstance(product.features, str)
+                        else product.features
+                    )
+                    feats.extend(parsed)
+                except (ValueError, TypeError):
+                    pass
+        company_features[company.id] = feats
+
+    # Call OpenAI to consolidate
+    feature_context = "\n".join(
+        [
+            f"Company '{c.name}' (ID: {c.id}): {', '.join(company_features.get(c.id, []) or ['(no features)'])}"
+            for c in companies
+        ]
+    )
+    user_prompt = f"Primary Company ID: {primary_id or '(none set)'}\n\nFeature Lists:\n{feature_context}"
+
+    from app.intelligence.openai_client import structured_completion
+    from app.intelligence.prompts import FEATURE_CONSOLIDATION_PROMPT
+    from app.intelligence.schemas import ConsolidatedFeatureResult
+
+    result = await structured_completion(
+        system_prompt=FEATURE_CONSOLIDATION_PROMPT,
+        user_prompt=user_prompt,
+        response_model=ConsolidatedFeatureResult,
+    )
+
+    return {
+        "companies": companies,
+        "consolidated_features": [f.model_dump() for f in result.features],
+        "summary": result.summary,
+        "primary_company_id": primary_id,
+    }
+
+
+@router.get("/compare/quadrant")
+async def compare_quadrant(
+    ids: str,
+    service: CompanyService = Depends(get_company_service),
+):
+    """Get quadrant visualization data for compared companies."""
+    company_ids = [i.strip() for i in ids.split(",") if i.strip()]
+    if not company_ids:
+        raise HTTPException(status_code=400, detail="No company IDs provided")
+    companies = await service.get_comparison_data(company_ids)
+
+    # Build context
+    context = "\n\n".join(
+        [
+            f"Company: {c.name}\nDescription: {c.description or 'N/A'}\n"
+            f"One-liner: {c.one_liner or 'N/A'}\nStage: {c.stage or 'N/A'}\n"
+            f"Positioning: {c.positioning_summary or 'N/A'}\n"
+            f"Categories: {', '.join(cat.name for cat in c.categories) or 'N/A'}\n"
+            f"ID: {c.id}"
+            for c in companies
+        ]
+    )
+
+    from app.intelligence.openai_client import structured_completion
+    from app.intelligence.prompts import QUADRANT_PROMPT
+    from app.intelligence.schemas import QuadrantResult
+
+    result = await structured_completion(
+        system_prompt=QUADRANT_PROMPT,
+        user_prompt=f"Companies:\n{context}",
+        response_model=QuadrantResult,
+    )
+
+    return {
+        "axis_pairs": [ap.model_dump() for ap in result.axis_pairs],
+        "scores": {k: [s.model_dump() for s in v] for k, v in result.scores.items()},
+        "primary_company_id": next((c.id for c in companies if c.is_primary), None),
     }
 
 
@@ -133,6 +246,27 @@ async def find_potential_clients(
 
     background_tasks.add_task(run_potential_clients_analysis, company_id)
     return {"status": "accepted", "message": "Potential clients research started"}
+
+
+@router.get("/{company_id}/snapshots")
+async def get_snapshots(
+    company_id: str,
+    service: CompanyService = Depends(get_company_service),
+):
+    """Get version history snapshots for a company."""
+    import json as _json
+
+    snapshots = await service.get_snapshots(company_id)
+    return [
+        {
+            "id": s.id,
+            "version": s.version,
+            "snapshot_data": _json.loads(s.snapshot_data) if s.snapshot_data else {},
+            "changes_summary": s.changes_summary,
+            "created_at": s.created_at.isoformat() if s.created_at else None,
+        }
+        for s in snapshots
+    ]
 
 
 @router.get("/{company_id}", response_model=CompanyDetail)

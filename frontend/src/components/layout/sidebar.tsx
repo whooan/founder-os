@@ -9,6 +9,7 @@ import {
   GitCompareArrows,
   Network,
   MessageSquare,
+  Lightbulb,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -18,6 +19,7 @@ const navItems = [
   { href: "/timeline", label: "Timeline", icon: Clock },
   { href: "/compare", label: "Compare", icon: GitCompareArrows },
   { href: "/ask", label: "Ask Intelligence", icon: MessageSquare },
+  { href: "/suggestions", label: "Suggestions", icon: Lightbulb },
 ];
 
 export function Sidebar() {
@@ -57,7 +59,7 @@ export function Sidebar() {
 
       <div className="border-t border-border p-4">
         <p className="text-xs text-muted-foreground">
-          SignalMap v1.0
+          SignalMap v2.0
         </p>
       </div>
     </aside>

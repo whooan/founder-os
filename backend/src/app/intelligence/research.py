@@ -115,6 +115,71 @@ def search_company(company_name: str) -> list[SearchResult]:
     return results[:MAX_SOURCES]
 
 
+def search_company_clients(
+    company_name: str, domain: str | None = None
+) -> list[SearchResult]:
+    """Dedicated search for client/customer information."""
+    queries = [
+        f'"{company_name}" customers clients case studies testimonials',
+        f'"{company_name}" powered by',
+        f'"{company_name}" "case study"',
+        f'"{company_name}" customer stories',
+        f'"{company_name}" integration partner',
+        f'"{company_name}" "trusted by" OR "used by"',
+    ]
+    if domain:
+        clean = domain.replace("https://", "").replace("http://", "").rstrip("/")
+        queries.append(f"site:{clean} customers")
+        queries.append(f"site:{clean} case-studies OR case-study")
+
+    seen_urls: set[str] = set()
+    results: list[SearchResult] = []
+
+    ddgs = DDGS()
+    for query in queries:
+        try:
+            hits = ddgs.text(query, max_results=5)
+            for hit in hits:
+                url = hit.get("href", "")
+                if url and url not in seen_urls:
+                    seen_urls.add(url)
+                    results.append(
+                        SearchResult(
+                            url=url,
+                            title=hit.get("title", ""),
+                            snippet=hit.get("body", ""),
+                        )
+                    )
+        except Exception as e:
+            logger.warning(f"Client search failed for query '{query}': {e}")
+
+    logger.info(f"Found {len(results)} client-specific URLs for '{company_name}'")
+    return results[:10]
+
+
+async def fetch_company_client_pages(domain: str) -> list[SourceDocument]:
+    """Directly fetch /customers, /case-studies, etc. from a company's website."""
+    if not domain:
+        return []
+    base = domain if domain.startswith("http") else f"https://{domain}"
+    base = base.rstrip("/")
+    paths = [
+        "/customers",
+        "/case-studies",
+        "/testimonials",
+        "/partners",
+        "/integrations",
+        "/clients",
+    ]
+    search_results = [
+        SearchResult(url=f"{base}{p}", title=f"{domain}{p}", snippet="")
+        for p in paths
+    ]
+    docs = await fetch_and_extract(search_results)
+    logger.info(f"Fetched {len(docs)} client pages from {domain}")
+    return docs
+
+
 def _search_docs(company_name: str) -> list[SearchResult]:
     """Search for developer documentation, API references, and technical resources."""
     queries = [

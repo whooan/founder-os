@@ -17,6 +17,8 @@ class EventRead(BaseModel):
     sentiment: Optional[str] = None
     significance: Optional[int] = None
     company_id: str
+    company_name: str = ""
+    company_domain: Optional[str] = None
     founder_id: Optional[str] = None
     raw_content: Optional[str] = None
     created_at: datetime

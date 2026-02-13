@@ -225,6 +225,11 @@ export default function CompanyDetailPage({
                 </Badge>
               )}
               <PipelineStatusBadge status={pipelineStatus} />
+              {company.data_version > 0 && (
+                <Badge variant="outline" className="text-xs">
+                  v{company.data_version}
+                </Badge>
+              )}
             </div>
             {company.one_liner && (
               <p className="text-muted-foreground mt-1">{company.one_liner}</p>
@@ -246,6 +251,17 @@ export default function CompanyDetailPage({
                 <span className="flex items-center gap-1">
                   <Users className="h-3.5 w-3.5" />
                   {company.employee_range} employees
+                </span>
+              )}
+              {company.last_enriched_at && (
+                <span className="flex items-center gap-1">
+                  <RefreshCw className="h-3.5 w-3.5" />
+                  Updated{" "}
+                  {new Date(company.last_enriched_at).toLocaleDateString("en-US", {
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric",
+                  })}
                 </span>
               )}
             </div>

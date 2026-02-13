@@ -7,23 +7,43 @@ import {
   Star,
   MessageSquare,
   PanelRightOpen,
+  Sparkles,
+  Table,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CompanySelector } from "@/components/compare/company-selector";
 import { FeatureMatrix } from "@/components/compare/feature-matrix";
+import { ConsolidatedFeatureMatrix } from "@/components/compare/consolidated-feature-matrix";
+import { QuadrantChart } from "@/components/compare/quadrant-chart";
 import { FundingComparison } from "@/components/compare/funding-comparison";
 import { TeamComparison } from "@/components/compare/team-comparison";
 import { ComparisonChat } from "@/components/compare/comparison-chat";
 import { useComparison } from "@/hooks/use-comparison";
-import { fetchCompanies } from "@/lib/api/companies";
-import type { Company } from "@/types";
+import {
+  fetchCompanies,
+  fetchConsolidatedComparison,
+  fetchQuadrantData,
+} from "@/lib/api/companies";
+import type {
+  Company,
+  ConsolidatedComparisonData,
+  QuadrantData,
+} from "@/types";
 
 export default function ComparePage() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [chatOpen, setChatOpen] = useState(false);
+  const [smartView, setSmartView] = useState(false);
   const { data, loading, error } = useComparison(selectedIds);
+
+  // Consolidated + Quadrant state
+  const [consolidatedData, setConsolidatedData] =
+    useState<ConsolidatedComparisonData | null>(null);
+  const [quadrantData, setQuadrantData] = useState<QuadrantData | null>(null);
+  const [consolidatedLoading, setConsolidatedLoading] = useState(false);
+  const [quadrantLoading, setQuadrantLoading] = useState(false);
 
   // Auto-select primary company on mount
   useEffect(() => {
@@ -36,6 +56,27 @@ export default function ComparePage() {
       })
       .catch(() => {});
   }, []);
+
+  // Load consolidated / quadrant data when smart view is toggled on
+  useEffect(() => {
+    if (!smartView || selectedIds.length < 2) {
+      setConsolidatedData(null);
+      setQuadrantData(null);
+      return;
+    }
+
+    setConsolidatedLoading(true);
+    fetchConsolidatedComparison(selectedIds)
+      .then((d) => setConsolidatedData(d))
+      .catch(() => setConsolidatedData(null))
+      .finally(() => setConsolidatedLoading(false));
+
+    setQuadrantLoading(true);
+    fetchQuadrantData(selectedIds)
+      .then((d) => setQuadrantData(d))
+      .catch(() => setQuadrantData(null))
+      .finally(() => setQuadrantLoading(false));
+  }, [smartView, selectedIds]);
 
   return (
     <div className="flex h-[calc(100vh-4rem)]">
@@ -53,21 +94,38 @@ export default function ComparePage() {
               teams, and funding.
             </p>
           </div>
-          {data && data.companies.length > 0 && (
-            <Button
-              variant={chatOpen ? "default" : "outline"}
-              size="sm"
-              onClick={() => setChatOpen(!chatOpen)}
-              className="gap-2"
-            >
-              {chatOpen ? (
-                <PanelRightOpen className="h-4 w-4" />
-              ) : (
-                <MessageSquare className="h-4 w-4" />
-              )}
-              {chatOpen ? "Close Chat" : "Chat"}
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            {data && data.companies.length > 1 && (
+              <Button
+                variant={smartView ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSmartView(!smartView)}
+                className="gap-2"
+              >
+                {smartView ? (
+                  <Table className="h-4 w-4" />
+                ) : (
+                  <Sparkles className="h-4 w-4" />
+                )}
+                {smartView ? "Basic View" : "Smart View"}
+              </Button>
+            )}
+            {data && data.companies.length > 0 && (
+              <Button
+                variant={chatOpen ? "default" : "outline"}
+                size="sm"
+                onClick={() => setChatOpen(!chatOpen)}
+                className="gap-2"
+              >
+                {chatOpen ? (
+                  <PanelRightOpen className="h-4 w-4" />
+                ) : (
+                  <MessageSquare className="h-4 w-4" />
+                )}
+                {chatOpen ? "Close Chat" : "Chat"}
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Company Selector */}
@@ -176,12 +234,27 @@ export default function ComparePage() {
               ))}
             </div>
 
-            {/* Feature Matrix */}
-            <FeatureMatrix
-              featureMatrix={data.feature_matrix}
-              companies={data.companies}
-              primaryCompanyId={data.primary_company_id}
-            />
+            {/* Quadrant Visualization (Smart View only) */}
+            {smartView && (
+              <QuadrantChart
+                data={quadrantData}
+                loading={quadrantLoading}
+              />
+            )}
+
+            {/* Feature Matrix — Smart or Basic */}
+            {smartView && (consolidatedLoading || consolidatedData) ? (
+              <ConsolidatedFeatureMatrix
+                data={consolidatedData!}
+                loading={consolidatedLoading}
+              />
+            ) : (
+              <FeatureMatrix
+                featureMatrix={data.feature_matrix}
+                companies={data.companies}
+                primaryCompanyId={data.primary_company_id}
+              />
+            )}
 
             {/* Funding Comparison */}
             <FundingComparison

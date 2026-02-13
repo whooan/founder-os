@@ -715,3 +715,87 @@ class CompanyService:
         for c in clients:
             grouped.setdefault(c.company_id, []).append(c)
         return grouped
+
+    # ── Versioning / Snapshots ──────────────────────────────────
+
+    async def create_snapshot(self, company_id: str) -> int:
+        """Snapshot the current company state and increment data_version."""
+        from app.models.enrichment_snapshot import EnrichmentSnapshot
+
+        company = await self.get_by_id(company_id)
+        if not company:
+            return 0
+
+        snapshot_data = {
+            "name": company.name,
+            "domain": company.domain,
+            "description": company.description,
+            "one_liner": company.one_liner,
+            "stage": company.stage,
+            "hq_location": company.hq_location,
+            "employee_range": company.employee_range,
+            "positioning_summary": company.positioning_summary,
+            "gtm_strategy": company.gtm_strategy,
+            "key_differentiators": company.key_differentiators,
+            "risk_signals": company.risk_signals,
+            "top_topics": company.top_topics,
+            "media_tone": company.media_tone,
+            "icp_analysis": company.icp_analysis,
+            "geography_analysis": company.geography_analysis,
+            "industry_focus": company.industry_focus,
+            "crosscheck_result": company.crosscheck_result,
+            "founders": [
+                {"name": f.name, "title": f.title}
+                for f in (company.founders or [])
+            ],
+            "funding_rounds": [
+                {
+                    "round_name": r.round_name,
+                    "amount_usd": r.amount_usd,
+                    "date": r.date.isoformat() if r.date else None,
+                }
+                for r in (company.funding_rounds or [])
+            ],
+            "products": [
+                {"name": p.name, "features": p.features}
+                for p in (company.products or [])
+            ],
+            "events_count": len(company.events) if company.events else 0,
+            "clients": [
+                {"client_name": c.client_name, "industry": c.industry}
+                for c in (company.competitor_clients or [])
+            ],
+            "sources_count": len(company.data_sources) if company.data_sources else 0,
+        }
+
+        new_version = (company.data_version or 0) + 1
+
+        snapshot = EnrichmentSnapshot(
+            company_id=company_id,
+            version=new_version,
+            snapshot_data=json.dumps(snapshot_data),
+        )
+        self.session.add(snapshot)
+
+        # Update company version
+        stmt = select(Company).where(Company.id == company_id)
+        result = await self.session.execute(stmt)
+        co = result.scalar_one_or_none()
+        if co:
+            co.data_version = new_version
+            co.last_enriched_at = datetime.now(timezone.utc)
+
+        await self.session.commit()
+        return new_version
+
+    async def get_snapshots(self, company_id: str) -> list:
+        """Get all enrichment snapshots for a company, ordered by version desc."""
+        from app.models.enrichment_snapshot import EnrichmentSnapshot
+
+        stmt = (
+            select(EnrichmentSnapshot)
+            .where(EnrichmentSnapshot.company_id == company_id)
+            .order_by(EnrichmentSnapshot.version.desc())
+        )
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())

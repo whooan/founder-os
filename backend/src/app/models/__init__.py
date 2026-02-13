@@ -3,7 +3,9 @@ from app.models.base import Base
 from app.models.company import Company
 from app.models.company_digest import CompanyDigest
 from app.models.competitor_client import CompetitorClient
+from app.models.conversation import Conversation
 from app.models.data_source import DataSource
+from app.models.enrichment_snapshot import EnrichmentSnapshot
 from app.models.event import Event
 from app.models.founder import Founder
 from app.models.funding_round import FundingRound
@@ -17,7 +19,9 @@ __all__ = [
     "Company",
     "CompanyDigest",
     "CompetitorClient",
+    "Conversation",
     "DataSource",
+    "EnrichmentSnapshot",
     "Event",
     "Founder",
     "FundingRound",

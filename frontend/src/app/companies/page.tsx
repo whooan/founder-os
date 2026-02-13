@@ -1,15 +1,32 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Search, Building2 } from "lucide-react";
+import { Search, Building2, RefreshCw, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { AddCompanyDialog } from "@/components/companies/add-company-dialog";
 import { CompanyCard } from "@/components/companies/company-card";
 import { useCompanies } from "@/hooks/use-companies";
+import { bulkUpdate } from "@/lib/api/companies";
 
 export default function CompaniesPage() {
   const { companies, loading, error, refetch } = useCompanies();
   const [search, setSearch] = useState("");
+  const [bulkUpdating, setBulkUpdating] = useState(false);
+
+  const handleBulkUpdate = async () => {
+    setBulkUpdating(true);
+    try {
+      await bulkUpdate();
+      // Poll for completion
+      setTimeout(() => {
+        refetch();
+        setBulkUpdating(false);
+      }, 5000);
+    } catch {
+      setBulkUpdating(false);
+    }
+  };
 
   const filtered = useMemo(() => {
     if (!search.trim()) return companies;
@@ -31,7 +48,22 @@ export default function CompaniesPage() {
             {companies.length} {companies.length === 1 ? "company" : "companies"} tracked
           </p>
         </div>
-        <AddCompanyDialog onCompanyAdded={refetch} />
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleBulkUpdate}
+            disabled={bulkUpdating || companies.length === 0}
+          >
+            {bulkUpdating ? (
+              <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <RefreshCw className="mr-2 h-3.5 w-3.5" />
+            )}
+            {bulkUpdating ? "Updating..." : "Bulk Update All"}
+          </Button>
+          <AddCompanyDialog onCompanyAdded={refetch} />
+        </div>
       </div>
 
       <div className="relative">

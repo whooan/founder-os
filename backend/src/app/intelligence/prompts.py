@@ -228,8 +228,20 @@ Extract:
    - vertical_strength: Assessment of their vertical specialization
    - industry_notes: Additional industry context
 
-CRITICAL: Extract ONLY from the provided source material. Do NOT fabricate clients or profiles. \
-If a client is mentioned in a case study, testimonial, or customer list, include it. \
+IMPORTANT: Be thorough and aggressive in identifying clients. Look for:
+- Companies mentioned on /customers, /case-studies, /testimonials pages
+- Logos displayed on the company's website (often listed by name in alt text or image titles)
+- Partner/integration mentions (e.g., "integrates with X", "works with Y")
+- Quotes from customers in press releases or blog posts
+- Companies mentioned as "powered by" or "built on" the company's platform
+- References in product documentation to specific customer deployments
+- Banner logos on the homepage or landing pages
+- "Trusted by" or "Used by" sections
+
+When confidence is uncertain, include the client with confidence="low" rather than omitting it.
+A partial list is more valuable than an empty one.
+
+Extract ONLY from the provided source material. Do NOT fabricate clients or profiles. \
 If you cannot determine certain attributes, leave them empty rather than guessing."""
 
 
@@ -261,3 +273,90 @@ Also provide:
 
 Be specific and actionable. Aim for 10-20 potential clients. \
 The CEO will use this to direct their sales team in Europe."""
+
+
+FEATURE_CONSOLIDATION_PROMPT = """You are a product analyst comparing multiple companies' feature sets.
+
+You will be given feature lists from multiple companies, along with the primary company ID.
+
+Your tasks:
+1. **Cluster similar features**: Identify features that are the same or very similar but named \
+differently across companies (e.g., "OCR" and "Optical Character Recognition" → "OCR / Document Recognition"). \
+Group them under a single canonical name.
+
+2. **Classify each consolidated feature** into one of these categories:
+   - "common": ALL compared companies have this feature
+   - "my_unique": ONLY the primary company has it (competitive advantage)
+   - "competitor_unique": One or more competitors have it but the primary company does NOT (gap to fill)
+   - "partial": Some companies have it, including the primary, but not all
+
+3. **Include the company IDs** that have each feature in `companies_with_feature`.
+
+4. **Write a brief summary** of the competitive feature landscape — what are the key differentiators, \
+what gaps exist, and where the primary company stands.
+
+Be thorough in matching similar features. Even if names differ, if they serve the same purpose, \
+group them together. The goal is a consolidated view a CEO can scan quickly."""
+
+
+QUADRANT_PROMPT = """You are a strategic market analyst. You will be given data about several companies \
+including their descriptions, products, positioning, and market categories.
+
+Your tasks:
+1. **Suggest 3-4 meaningful axis pairs** for a quadrant/scatter visualization. Each axis pair \
+should reveal real strategic positioning differences between these specific companies. \
+Examples of good axes: "Enterprise Focus ↔ SMB Focus", "AI-Native ↔ Traditional Automation", \
+"Vertical-Specific ↔ Horizontal Platform", "Product Maturity ↔ Innovation Speed", \
+"Self-Serve ↔ Sales-Led".
+
+   Choose axes that:
+   - Are relevant to THIS specific set of companies
+   - Create meaningful spread (don't cluster everyone in one quadrant)
+   - Help a CEO understand the competitive landscape
+
+2. **Score every company on both axes** from 0 to 100. Use the full range. \
+The key identifier for scores is "x_label|y_label" (both labels joined by a pipe).
+
+3. **Provide a brief rationale** for each score so the CEO understands the placement.
+
+The result should enable a scatter plot where companies are visually differentiated."""
+
+
+SUGGESTIONS_PROMPT = """You are a strategic advisor to a CEO. You have comprehensive competitive \
+intelligence data about the primary company and its competitors.
+
+Generate three types of actionable intelligence:
+
+1. **Potential Customers** (10-15 specific companies):
+   Based on competitors' client lists, identify companies that would be good prospects for \
+   the primary company. Cross-reference competitor clients to find equivalent companies in \
+   the primary's geography (especially Spain and Europe). For each:
+   - company_name: Specific company name
+   - domain: Website if you know it
+   - country: Where they're based
+   - industry: Their sector
+   - why_good_fit: Specific reasoning (2-3 sentences)
+   - source_competitor_client: Which competitor client they're equivalent to
+   - confidence: high/medium/low
+
+2. **Product Direction** (5-8 suggestions):
+   Based on feature gaps (features competitors have that primary doesn't), market trends \
+   from events, and competitive dynamics, suggest specific product improvements:
+   - suggestion: Specific feature or improvement
+   - rationale: Why this matters competitively (2-3 sentences)
+   - priority: high/medium/low based on competitive impact
+   - source_evidence: What data supports this suggestion
+
+3. **CEO Briefing** (8-12 items):
+   Key intelligence items a CEO should know right now:
+   - Competitor risks (new funding, pivots, aggressive hiring)
+   - Market opportunities (underserved segments, emerging trends)
+   - Recent competitor moves (launches, partnerships, acquisitions)
+   - Market shifts (regulatory changes, technology trends)
+   Each with: title, content (2-3 sentences), category (risk/opportunity/competitor_move/market_shift), urgency (high/medium/low)
+
+Also provide:
+- summary: 3-4 sentence executive summary of the competitive landscape
+- analysis_date: Will be set by the system, leave empty
+
+Be specific, actionable, and grounded in the provided data. No generic advice."""
