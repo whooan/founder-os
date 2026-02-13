@@ -8,6 +8,7 @@ import {
   Clock,
   GitCompareArrows,
   MessageSquare,
+  Settings,
   Star,
 } from "lucide-react";
 import {
@@ -101,6 +102,10 @@ export function CommandMenu({ open, onOpenChange }: CommandMenuProps) {
           <CommandItem onSelect={() => navigate("/ask")}>
             <MessageSquare className="mr-2 h-4 w-4" />
             <span>Ask Intelligence</span>
+          </CommandItem>
+          <CommandItem onSelect={() => navigate("/settings")}>
+            <Settings className="mr-2 h-4 w-4" />
+            <span>Settings</span>
           </CommandItem>
         </CommandGroup>
       </CommandList>

@@ -18,12 +18,19 @@ out/
 .env
 .env.local
 .env.*.local
+!.env.example
+
+# Secrets
+.secret_key
 
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
+
+# Claude
+.claude/
 
 # OS
 .DS_Store

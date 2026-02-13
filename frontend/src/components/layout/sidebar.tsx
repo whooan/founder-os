@@ -2,16 +2,22 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Space_Grotesk } from "next/font/google";
 import {
   LayoutDashboard,
   Building2,
   Clock,
   GitCompareArrows,
-  Network,
   MessageSquare,
   Lightbulb,
+  Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  weight: ["700"],
+});
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -20,6 +26,7 @@ const navItems = [
   { href: "/compare", label: "Compare", icon: GitCompareArrows },
   { href: "/ask", label: "Ask Intelligence", icon: MessageSquare },
   { href: "/suggestions", label: "Suggestions", icon: Lightbulb },
+  { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 export function Sidebar() {
@@ -28,8 +35,14 @@ export function Sidebar() {
   return (
     <aside className="flex h-full w-64 flex-col border-r border-border bg-card">
       <div className="flex h-14 items-center gap-2 border-b border-border px-6">
-        <Network className="h-5 w-5 text-primary" />
-        <span className="text-lg font-semibold tracking-tight">SignalMap</span>
+        <span
+          className={cn(
+            spaceGrotesk.className,
+            "text-lg font-bold bg-gradient-to-r from-violet-600 via-blue-500 to-cyan-400 bg-clip-text text-transparent"
+          )}
+        >
+          founderOS
+        </span>
       </div>
 
       <nav className="flex-1 space-y-1 p-3">
@@ -59,7 +72,7 @@ export function Sidebar() {
 
       <div className="border-t border-border p-4">
         <p className="text-xs text-muted-foreground">
-          SignalMap v2.0
+          founderOS v1.0
         </p>
       </div>
     </aside>

@@ -65,7 +65,7 @@ export default function DashboardPage() {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">SignalMap</h2>
+          <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-violet-600 via-blue-500 to-cyan-400 bg-clip-text text-transparent">founderOS</h2>
           <p className="text-muted-foreground">
             Competitive Intelligence Platform
           </p>
@@ -107,7 +107,7 @@ export default function DashboardPage() {
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
               <Building2 className="h-6 w-6 text-primary" />
             </div>
-            <CardTitle>Get started with SignalMap</CardTitle>
+            <CardTitle>Get started with founderOS</CardTitle>
             <CardDescription>
               Add your company first, then add competitors to compare. We&apos;ll
               automatically enrich profiles with data from web, social media,

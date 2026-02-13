@@ -16,8 +16,8 @@ async def lifespan(app: FastAPI):
 
 def create_app() -> FastAPI:
     app = FastAPI(
-        title="SignalMap API",
-        version="0.1.0",
+        title="founderOS API",
+        version="1.0.0",
         lifespan=lifespan,
     )
     app.add_middleware(

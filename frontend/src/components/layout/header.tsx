@@ -11,11 +11,12 @@ const pageTitles: Record<string, string> = {
   "/timeline": "Timeline",
   "/market": "Market Map",
   "/ask": "Ask Intelligence",
+  "/settings": "Settings",
 };
 
 function getPageTitle(pathname: string): string {
   if (pathname.startsWith("/companies/")) return "Company Detail";
-  return pageTitles[pathname] || "SignalMap";
+  return pageTitles[pathname] || "founderOS";
 }
 
 interface HeaderProps {

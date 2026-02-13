@@ -1,7 +1,7 @@
 [project]
-name = "signalmap-backend"
-version = "0.1.0"
-description = "SignalMap - Founder & Company Intelligence Platform API"
+name = "founderos-backend"
+version = "1.0.0"
+description = "founderOS - Founder & Company Intelligence Platform API"
 requires-python = ">=3.10"
 dependencies = [
     "fastapi[standard]>=0.115.0",
@@ -17,6 +17,7 @@ dependencies = [
     "ddgs>=7.0.0",
     "trafilatura>=2.0.0",
     "markdownify>=0.14.0",
+    "cryptography>=44.0.0",
 ]
 
 [project.optional-dependencies]

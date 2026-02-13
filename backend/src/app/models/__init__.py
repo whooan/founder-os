@@ -1,3 +1,4 @@
+from app.models.app_setting import AppSetting
 from app.models.associations import company_categories, round_investors
 from app.models.base import Base
 from app.models.company import Company
@@ -15,6 +16,7 @@ from app.models.product import Product
 from app.models.social_post import SocialPost
 
 __all__ = [
+    "AppSetting",
     "Base",
     "Company",
     "CompanyDigest",

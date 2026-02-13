@@ -7,10 +7,12 @@ from app.api.founders import router as founders_router
 from app.api.health import router as health_router
 from app.api.intelligence import router as intelligence_router
 from app.api.market import router as market_router
+from app.api.settings import router as settings_router
 from app.api.suggestions import router as suggestions_router
 
 api_router = APIRouter()
 api_router.include_router(health_router, tags=["health"])
+api_router.include_router(settings_router, tags=["settings"])
 api_router.include_router(companies_router, prefix="/companies", tags=["companies"])
 api_router.include_router(conversations_router, prefix="/conversations", tags=["conversations"])
 api_router.include_router(founders_router, prefix="/founders", tags=["founders"])
