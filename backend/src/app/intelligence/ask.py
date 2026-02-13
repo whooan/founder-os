@@ -398,7 +398,7 @@ async def compare_chat(query, session):
         {"role": "user", "content": query.question},
     ]
 
-    answer = await chat_completion(messages, model="gpt-4.1")
+    answer = await chat_completion(messages, model="gpt-5.2")
 
     # Deduplicate sources
     seen = set()

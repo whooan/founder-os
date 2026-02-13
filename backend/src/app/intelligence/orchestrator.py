@@ -880,7 +880,7 @@ async def run_suggestions_generation(company_id: str) -> None:
             system_prompt=SUGGESTIONS_PROMPT,
             user_prompt=context,
             response_model=SuggestionsResult,
-            model="gpt-4.1",
+            model="gpt-5.2",
         )
 
         # Store as JSON in a digest

@@ -16,5 +16,5 @@ async def run_company_digest(
             f"ALL AVAILABLE DATA:\n{all_data_context}"
         ),
         response_model=CompanyDigestResult,
-        model="gpt-4.1",  # 1M context window for comprehensive analysis
+        model="gpt-5.2",
     )

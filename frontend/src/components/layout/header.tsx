@@ -6,11 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 const pageTitles: Record<string, string> = {
-  "/": "Dashboard",
-  "/companies": "Companies",
-  "/timeline": "Timeline",
+  "/": "Home",
+  "/companies": "Compset",
+  "/timeline": "Events",
   "/market": "Market Map",
-  "/ask": "Ask Intelligence",
+  "/compare": "Compare",
+  "/ask": "Ask",
+  "/suggestions": "Insights",
   "/settings": "Settings",
 };
 

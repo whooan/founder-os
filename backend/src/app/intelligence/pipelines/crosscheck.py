@@ -16,5 +16,5 @@ async def run_crosscheck(
             f"ALL COLLECTED DATA FOR CROSSCHECK:\n{all_data_context}"
         ),
         response_model=CrossCheckResult,
-        model="gpt-4.1",  # needs large context for comprehensive crosscheck
+        model="gpt-5.2",
     )

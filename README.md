@@ -23,22 +23,33 @@
 
 ## Quick Start
 
-### Prerequisites
+### Option A: Docker (recommended)
+
+```bash
+git clone <your-repo-url>
+cd founderos
+docker compose up --build
+```
+
+Open [http://localhost:3000](http://localhost:3000) and configure your OpenAI API key in **Settings**.
+
+### Option B: Manual
+
+#### Prerequisites
 
 - Python 3.10+
 - Node.js 20+
 - [uv](https://docs.astral.sh/uv/) (Python package manager)
 - [pnpm](https://pnpm.io/) (Node package manager)
-- An OpenAI API key
 
-### 1. Clone the repository
+#### 1. Clone the repository
 
 ```bash
 git clone <your-repo-url>
 cd founderos
 ```
 
-### 2. Backend setup
+#### 2. Backend setup
 
 ```bash
 cd backend
@@ -49,7 +60,7 @@ uv sync
 PYTHONPATH=src uv run uvicorn app.main:app --reload --port 8000
 ```
 
-### 3. Frontend setup
+#### 3. Frontend setup
 
 ```bash
 cd frontend
@@ -59,7 +70,7 @@ pnpm install
 pnpm dev
 ```
 
-### 4. Open the app
+#### 4. Open the app
 
 Visit [http://localhost:3000](http://localhost:3000). You can configure your OpenAI API key in **Settings** or via the `.env` file.
 
@@ -77,6 +88,7 @@ Visit [http://localhost:3000](http://localhost:3000). You can configure your Ope
 ```
 founderos/
 ├── backend/
+│   ├── Dockerfile
 │   └── src/app/
 │       ├── api/            # FastAPI route handlers
 │       ├── models/         # SQLAlchemy models
@@ -85,14 +97,17 @@ founderos/
 │       ├── intelligence/   # AI pipelines & OpenAI integration
 │       ├── config.py       # App configuration
 │       ├── database.py     # Async DB engine & session
-│       └── encryption.py   # Fernet encryption for secrets
+│       ├── encryption.py   # Fernet encryption for secrets
+│       └── scheduler.py    # Daily auto-update scheduler
 ├── frontend/
+│   ├── Dockerfile
 │   └── src/
 │       ├── app/            # Next.js App Router pages
 │       ├── components/     # React components
 │       ├── hooks/          # Custom React hooks
 │       ├── lib/            # API client & utilities
 │       └── types/          # TypeScript type definitions
+├── docker-compose.yml
 ├── README.md
 └── LICENSE
 ```

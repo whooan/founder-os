@@ -8,6 +8,7 @@ import {
   Clock,
   GitCompareArrows,
   MessageSquare,
+  Lightbulb,
   Settings,
   Star,
 } from "lucide-react";
@@ -85,15 +86,15 @@ export function CommandMenu({ open, onOpenChange }: CommandMenuProps) {
         <CommandGroup heading="Navigation">
           <CommandItem onSelect={() => navigate("/")}>
             <LayoutDashboard className="mr-2 h-4 w-4" />
-            <span>Dashboard</span>
+            <span>Home</span>
           </CommandItem>
           <CommandItem onSelect={() => navigate("/companies")}>
             <Building2 className="mr-2 h-4 w-4" />
-            <span>Companies</span>
+            <span>Compset</span>
           </CommandItem>
           <CommandItem onSelect={() => navigate("/timeline")}>
             <Clock className="mr-2 h-4 w-4" />
-            <span>Timeline</span>
+            <span>Events</span>
           </CommandItem>
           <CommandItem onSelect={() => navigate("/compare")}>
             <GitCompareArrows className="mr-2 h-4 w-4" />
@@ -101,7 +102,11 @@ export function CommandMenu({ open, onOpenChange }: CommandMenuProps) {
           </CommandItem>
           <CommandItem onSelect={() => navigate("/ask")}>
             <MessageSquare className="mr-2 h-4 w-4" />
-            <span>Ask Intelligence</span>
+            <span>Ask</span>
+          </CommandItem>
+          <CommandItem onSelect={() => navigate("/suggestions")}>
+            <Lightbulb className="mr-2 h-4 w-4" />
+            <span>Insights</span>
           </CommandItem>
           <CommandItem onSelect={() => navigate("/settings")}>
             <Settings className="mr-2 h-4 w-4" />
