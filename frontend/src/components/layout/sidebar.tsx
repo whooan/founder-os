@@ -10,6 +10,7 @@ import {
   GitCompareArrows,
   MessageSquare,
   Lightbulb,
+  PieChart,
   Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -27,6 +28,10 @@ const marketItems = [
   { href: "/companies", label: "Compset", icon: Building2 },
   { href: "/timeline", label: "Events", icon: Clock },
   { href: "/compare", label: "Compare", icon: GitCompareArrows },
+];
+
+const capitalItems = [
+  { href: "/capital", label: "Cap Table", icon: PieChart },
 ];
 
 const intelligenceItems = [
@@ -86,6 +91,15 @@ export function Sidebar() {
           </p>
           <div className="space-y-1">
             {marketItems.map(renderLink)}
+          </div>
+        </div>
+
+        <div className="mt-6">
+          <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">
+            Capital
+          </p>
+          <div className="space-y-1">
+            {capitalItems.map(renderLink)}
           </div>
         </div>
 

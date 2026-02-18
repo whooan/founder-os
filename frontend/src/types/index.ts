@@ -302,6 +302,117 @@ export interface Conversation {
   updated_at: string;
 }
 
+// ── Capital / Cap Table ─────────────────────────────────────
+
+export interface ShareClass {
+  id: string;
+  name: string;
+  votes_per_share: number;
+  liquidation_preference: string | null;
+  seniority: number;
+  created_at: string | null;
+}
+
+export interface Stakeholder {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  type: "founder" | "employee" | "angel" | "vc" | "other";
+  entity_name: string | null;
+  contact_person: string | null;
+  partner_emails: string | null;
+  linkedin_url: string | null;
+  notes: string | null;
+  created_at: string | null;
+}
+
+export interface Allocation {
+  id: string;
+  stakeholder_id: string;
+  stakeholder_name: string | null;
+  share_class_id: string;
+  share_class_name: string | null;
+  shares: number;
+  amount_invested: number | null;
+  ownership_pct: number;
+  notes: string | null;
+}
+
+export interface EquityEvent {
+  id: string;
+  name: string;
+  event_type: string;
+  date: string | null;
+  pre_money_valuation: number | null;
+  amount_raised: number | null;
+  price_per_share: number | null;
+  total_shares_after: number | null;
+  notes: string | null;
+  allocations: Allocation[];
+  created_at: string | null;
+}
+
+export interface CapTableRow {
+  stakeholder: Stakeholder;
+  shares_by_class: Record<string, number>;
+  total_shares: number;
+  ownership_pct: number;
+  total_invested: number;
+}
+
+export interface CapTableSnapshot {
+  rows: CapTableRow[];
+  total_shares: number;
+  share_classes: ShareClass[];
+}
+
+export interface CapTableEvolutionEntry {
+  event: EquityEvent;
+  snapshot: CapTableRow[];
+}
+
+export interface CapTableKPIs {
+  last_valuation: number | null;
+  post_money_valuation: number | null;
+  total_raised: number;
+  total_shareholders: number;
+  founder_ownership_pct: number;
+  total_shares: number;
+  rounds_count: number;
+  last_round_name: string | null;
+}
+
+export interface LegalDocument {
+  id: string;
+  title: string;
+  doc_type: string;
+  date: string | null;
+  summary: string | null;
+  file_url: string | null;
+  file_name: string | null;
+  notes: string | null;
+  created_at: string | null;
+}
+
+export interface CompanyLegal {
+  id: string;
+  company_id: string;
+  legal_name: string | null;
+  cif: string | null;
+  registered_address: string | null;
+  city: string | null;
+  postal_code: string | null;
+  country: string | null;
+  registration_number: string | null;
+  registration_date: string | null;
+  notary: string | null;
+  protocol_number: string | null;
+  notes: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
 // ── CEO Suggestions ─────────────────────────────────────────
 
 export interface SuggestedClient {

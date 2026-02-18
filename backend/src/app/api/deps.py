@@ -5,6 +5,8 @@ from app.database import get_session
 from app.services.company_service import CompanyService
 from app.services.event_service import EventService
 from app.services.founder_service import FounderService
+from app.services.captable_service import CapTableService
+from app.services.legal_service import LegalService
 from app.services.market_service import MarketService
 
 
@@ -36,3 +38,15 @@ async def get_market_service(
     session: AsyncSession = Depends(get_session),
 ) -> MarketService:
     return MarketService(session)
+
+
+async def get_captable_service(
+    session: AsyncSession = Depends(get_session),
+) -> CapTableService:
+    return CapTableService(session)
+
+
+async def get_legal_service(
+    session: AsyncSession = Depends(get_session),
+) -> LegalService:
+    return LegalService(session)

@@ -1,11 +1,13 @@
 from fastapi import APIRouter
 
+from app.api.captable import router as captable_router
 from app.api.companies import router as companies_router
 from app.api.conversations import router as conversations_router
 from app.api.events import router as events_router
 from app.api.founders import router as founders_router
 from app.api.health import router as health_router
 from app.api.intelligence import router as intelligence_router
+from app.api.legal import router as legal_router
 from app.api.market import router as market_router
 from app.api.settings import router as settings_router
 from app.api.suggestions import router as suggestions_router
@@ -20,3 +22,5 @@ api_router.include_router(events_router, prefix="/events", tags=["events"])
 api_router.include_router(market_router, prefix="/market", tags=["market"])
 api_router.include_router(intelligence_router, prefix="/intelligence", tags=["intelligence"])
 api_router.include_router(suggestions_router, prefix="/suggestions", tags=["suggestions"])
+api_router.include_router(captable_router, prefix="/captable", tags=["captable"])
+api_router.include_router(legal_router, prefix="/legal", tags=["legal"])
