@@ -56,6 +56,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { PipelineStatusBadge } from "@/components/companies/pipeline-status";
+import { GeneratePdfButton } from "@/components/companies/pdf-report/generate-pdf-button";
 import { EditableField } from "@/components/companies/editable-field";
 import { SourceCard } from "@/components/companies/source-card";
 import { SocialPanel } from "@/components/companies/social-panel";
@@ -268,6 +269,7 @@ export default function CompanyDetailPage({
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <GeneratePdfButton company={company} />
           {!company.is_primary && (
             <Button
               variant="outline"
