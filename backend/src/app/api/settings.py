@@ -17,6 +17,8 @@ class SettingsResponse(BaseModel):
     auto_update_enabled: bool
     auto_update_hour: int
     last_daily_update: str | None
+    holded_api_key_masked: str
+    holded_configured: bool
 
 
 class SettingsUpdate(BaseModel):
@@ -26,6 +28,7 @@ class SettingsUpdate(BaseModel):
     openai_model: str | None = None
     auto_update_enabled: bool | None = None
     auto_update_hour: int | None = None
+    holded_api_key: str | None = None
 
 
 class SettingsStatus(BaseModel):
@@ -46,6 +49,7 @@ async def _build_response(svc: SettingsService) -> SettingsResponse:
     hour_str = await svc.get("auto_update_hour")
     auto_hour = int(hour_str) if hour_str else 7
     last_update = await svc.get("last_daily_update")
+    holded_masked = await svc.get_masked("holded_api_key")
     return SettingsResponse(
         founder_name=founder_name,
         org_name=org_name,
@@ -55,6 +59,8 @@ async def _build_response(svc: SettingsService) -> SettingsResponse:
         auto_update_enabled=auto_enabled,
         auto_update_hour=auto_hour,
         last_daily_update=last_update,
+        holded_api_key_masked=holded_masked,
+        holded_configured=bool(holded_masked),
     )
 
 
@@ -84,6 +90,8 @@ async def update_settings(
         )
     if body.auto_update_hour is not None:
         await svc.set("auto_update_hour", str(body.auto_update_hour))
+    if body.holded_api_key is not None:
+        await svc.set("holded_api_key", body.holded_api_key, is_secret=True)
 
     # Sync scheduler if auto-update settings changed
     if body.auto_update_enabled is not None or body.auto_update_hour is not None:

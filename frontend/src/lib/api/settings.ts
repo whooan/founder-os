@@ -9,6 +9,8 @@ export interface SettingsResponse {
   auto_update_enabled: boolean;
   auto_update_hour: number;
   last_daily_update: string | null;
+  holded_api_key_masked: string;
+  holded_configured: boolean;
 }
 
 export interface SettingsUpdate {
@@ -18,6 +20,7 @@ export interface SettingsUpdate {
   openai_model?: string;
   auto_update_enabled?: boolean;
   auto_update_hour?: number;
+  holded_api_key?: string;
 }
 
 interface SettingsStatus {

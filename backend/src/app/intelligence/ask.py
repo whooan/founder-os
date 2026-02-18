@@ -12,6 +12,116 @@ from app.services.company_service import CompanyService
 logger = logging.getLogger(__name__)
 
 
+async def _format_finance_context(session: AsyncSession) -> str:
+    """Build finance context from treasury and bank transaction data."""
+    from app.services.finance_service import FinanceService
+
+    svc = FinanceService(session)
+    parts: list[str] = []
+
+    accounts = await svc.get_treasury_accounts()
+    if not accounts:
+        return ""
+
+    parts.append("## Financial Data (from Holded bank aggregator)")
+
+    cash = await svc.get_cash_position()
+    parts.append(f"**Cash Position:** \u20ac{cash:,.2f}")
+
+    runway = await svc.get_runway_months()
+    if runway is not None:
+        parts.append(f"**Runway:** {runway} months (based on avg burn last 3 months)")
+
+    monthly = await svc.get_monthly_summary(months=6)
+    if monthly:
+        parts.append("**Monthly P&L (last 6 months):**")
+        for m in monthly:
+            parts.append(
+                f"- {m['year_month']}: income \u20ac{m['income']:,.0f}, "
+                f"expenses \u20ac{m['expenses']:,.0f}, net \u20ac{m['net']:,.0f}"
+            )
+
+    expenses = await svc.get_expense_breakdown(months=3)
+    if expenses:
+        parts.append("**Top Expenses (last 3 months):**")
+        for e in expenses[:7]:
+            parts.append(f"- {e['contact_name']}: \u20ac{e['total']:,.0f} ({e['transaction_count']} txns)")
+
+    income = await svc.get_income_sources(months=3)
+    if income:
+        parts.append("**Top Income Sources (last 3 months):**")
+        for i in income[:7]:
+            parts.append(f"- {i['contact_name']}: \u20ac{i['total']:,.0f} ({i['transaction_count']} txns)")
+
+    if accounts:
+        parts.append("**Treasury Accounts:**")
+        for a in accounts:
+            parts.append(f"- {a.name} ({a.account_type}): \u20ac{a.balance:,.2f}")
+
+    return "\n".join(parts)
+
+
+async def _format_captable_context(session: AsyncSession, company_id: str) -> str:
+    """Build cap table context for the primary company."""
+    from app.services.captable_service import CapTableService
+
+    svc = CapTableService(session)
+    parts: list[str] = []
+
+    try:
+        kpis = await svc.get_kpis(company_id)
+    except Exception:
+        return ""
+
+    parts.append("## Cap Table & Equity")
+
+    if kpis.post_money_valuation:
+        parts.append(f"**Post-Money Valuation:** \u20ac{kpis.post_money_valuation:,.0f}")
+    if kpis.last_valuation:
+        parts.append(f"**Last Pre-Money Valuation:** \u20ac{kpis.last_valuation:,.0f}")
+    parts.append(f"**Total Raised:** \u20ac{kpis.total_raised:,.0f}")
+    parts.append(f"**Founder Ownership:** {kpis.founder_ownership_pct:.1f}%")
+    parts.append(f"**Total Shares:** {kpis.total_shares:,}")
+    parts.append(f"**Shareholders:** {kpis.total_shareholders}")
+    parts.append(f"**Rounds:** {kpis.rounds_count}")
+    if kpis.last_round_name:
+        parts.append(f"**Last Round:** {kpis.last_round_name}")
+
+    try:
+        snapshot = await svc.get_cap_table(company_id)
+        if snapshot.rows:
+            parts.append("**Ownership Breakdown:**")
+            for row in sorted(snapshot.rows, key=lambda r: r.ownership_pct, reverse=True):
+                parts.append(
+                    f"- {row.stakeholder.name} ({row.stakeholder.type}): "
+                    f"{row.ownership_pct:.1f}% — {row.total_shares:,} shares"
+                )
+    except Exception:
+        pass
+
+    # VSOP pool
+    try:
+        from app.services.vsop_service import VsopService
+        vsop_svc = VsopService(session)
+        summary = await vsop_svc.get_summary(company_id)
+        if summary.pool:
+            parts.append(f"\n**VSOP Pool:** {summary.pool.name} — {summary.pool.total_shares:,} shares")
+            parts.append(f"**Pool Utilization:** {summary.pool_utilization_pct:.1f}%")
+            parts.append(f"**Total Vested:** {summary.total_vested:,} shares")
+            parts.append(f"**Total Unvested:** {summary.total_unvested:,} shares")
+            if summary.grants:
+                parts.append("**VSOP Grants:**")
+                for g in summary.grants:
+                    parts.append(
+                        f"- {g.stakeholder_name}: {g.shares_granted:,} shares, "
+                        f"{g.vesting_pct:.0f}% vested, status: {g.status}"
+                    )
+    except Exception:
+        pass
+
+    return "\n".join(parts)
+
+
 def _format_company_context(company: Company) -> str:
     """Format a company's data as context for the AI."""
     parts = [f"## {company.name}"]
@@ -276,6 +386,25 @@ async def ask_intelligence(
                             {"label": ds.title or ds.url, "url": ds.url}
                         )
 
+        # Add finance and cap table context (cross-pillar data)
+        try:
+            finance_ctx = await _format_finance_context(session)
+            if finance_ctx:
+                context_parts.append(finance_ctx)
+        except Exception:
+            logger.debug("Could not load finance context", exc_info=True)
+
+        # Add cap table context for primary company
+        try:
+            primary_companies = await service.list_all(limit=100)
+            primary = next((c for c in primary_companies if c.is_primary), None)
+            if primary:
+                captable_ctx = await _format_captable_context(session, primary.id)
+                if captable_ctx:
+                    context_parts.append(captable_ctx)
+        except Exception:
+            logger.debug("Could not load cap table context", exc_info=True)
+
         context = (
             "\n\n---\n\n".join(context_parts)
             if context_parts
@@ -334,6 +463,24 @@ async def ask_intelligence_with_history(
                     context_parts.append(_format_company_context(full))
                     for ds in full.data_sources:
                         all_sources.append({"label": ds.title or ds.url, "url": ds.url})
+
+        # Add cross-pillar context (finance + cap table)
+        try:
+            finance_ctx = await _format_finance_context(session)
+            if finance_ctx:
+                context_parts.append(finance_ctx)
+        except Exception:
+            pass
+
+        try:
+            all_cos = await service.list_all(limit=100)
+            primary = next((c for c in all_cos if c.is_primary), None)
+            if primary:
+                captable_ctx = await _format_captable_context(session, primary.id)
+                if captable_ctx:
+                    context_parts.append(captable_ctx)
+        except Exception:
+            pass
 
         context = (
             "\n\n---\n\n".join(context_parts)

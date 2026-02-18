@@ -859,6 +859,18 @@ async def run_suggestions_generation(company_id: str) -> None:
         parts = [f"# Primary Company: {primary.name}"]
         parts.append(_format_company_for_suggestions(primary))
 
+        # Add financial context
+        try:
+            from app.intelligence.ask import _format_finance_context, _format_captable_context
+            finance_ctx = await _format_finance_context(session)
+            if finance_ctx:
+                parts.append(f"\n{finance_ctx}")
+            captable_ctx = await _format_captable_context(session, company_id)
+            if captable_ctx:
+                parts.append(f"\n{captable_ctx}")
+        except Exception:
+            logger.debug("Could not load finance/captable context for suggestions", exc_info=True)
+
         # Add competitor data with clients
         for comp_summary in all_companies:
             if comp_summary.id == company_id:

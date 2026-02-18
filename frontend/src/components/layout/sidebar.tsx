@@ -5,12 +5,17 @@ import { usePathname } from "next/navigation";
 import { Space_Grotesk } from "next/font/google";
 import {
   LayoutDashboard,
+  PieChart,
+  Award,
+  Users,
+  Scale,
+  Landmark,
   Building2,
+  Network,
   Clock,
   GitCompareArrows,
   MessageSquare,
   Lightbulb,
-  PieChart,
   Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -20,33 +25,43 @@ const spaceGrotesk = Space_Grotesk({
   weight: ["700"],
 });
 
-const mainNavItems = [
-  { href: "/", label: "Home", icon: LayoutDashboard },
-];
-
-const marketItems = [
-  { href: "/companies", label: "Compset", icon: Building2 },
-  { href: "/timeline", label: "Events", icon: Clock },
-  { href: "/compare", label: "Compare", icon: GitCompareArrows },
+const homeItems = [
+  { href: "/", label: "Dashboard", icon: LayoutDashboard },
 ];
 
 const capitalItems = [
   { href: "/capital", label: "Cap Table", icon: PieChart },
+  { href: "/capital/vsop", label: "VSOP", icon: Award },
+  { href: "/capital/stakeholders", label: "Stakeholders", icon: Users },
+  { href: "/capital/legal", label: "Legal", icon: Scale },
 ];
 
-const intelligenceItems = [
+const financeItems = [
+  { href: "/finance", label: "Overview", icon: Landmark },
+];
+
+const marketItems = [
+  { href: "/companies", label: "Compset", icon: Building2 },
+  { href: "/market", label: "Market Map", icon: Network },
+  { href: "/timeline", label: "Events", icon: Clock },
+  { href: "/compare", label: "Compare", icon: GitCompareArrows },
+];
+
+const aiItems = [
   { href: "/ask", label: "Ask", icon: MessageSquare },
   { href: "/suggestions", label: "Insights", icon: Lightbulb },
 ];
+
+// Routes where only exact match should highlight (not startsWith)
+const exactMatchRoutes = new Set(["/", "/capital", "/finance"]);
 
 export function Sidebar() {
   const pathname = usePathname();
 
   const renderLink = (item: { href: string; label: string; icon: React.ComponentType<{ className?: string }> }) => {
-    const isActive =
-      item.href === "/"
-        ? pathname === "/"
-        : pathname.startsWith(item.href);
+    const isActive = exactMatchRoutes.has(item.href)
+      ? pathname === item.href
+      : pathname.startsWith(item.href);
 
     return (
       <Link
@@ -82,16 +97,7 @@ export function Sidebar() {
 
       <nav className="flex-1 overflow-y-auto p-3">
         <div className="space-y-1">
-          {mainNavItems.map(renderLink)}
-        </div>
-
-        <div className="mt-6">
-          <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">
-            Market
-          </p>
-          <div className="space-y-1">
-            {marketItems.map(renderLink)}
-          </div>
+          {homeItems.map(renderLink)}
         </div>
 
         <div className="mt-6">
@@ -105,10 +111,28 @@ export function Sidebar() {
 
         <div className="mt-6">
           <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">
-            Intelligence
+            Finance
           </p>
           <div className="space-y-1">
-            {intelligenceItems.map(renderLink)}
+            {financeItems.map(renderLink)}
+          </div>
+        </div>
+
+        <div className="mt-6">
+          <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">
+            Market
+          </p>
+          <div className="space-y-1">
+            {marketItems.map(renderLink)}
+          </div>
+        </div>
+
+        <div className="mt-6">
+          <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">
+            AI
+          </p>
+          <div className="space-y-1">
+            {aiItems.map(renderLink)}
           </div>
         </div>
       </nav>

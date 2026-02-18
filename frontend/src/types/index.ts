@@ -383,6 +383,47 @@ export interface CapTableKPIs {
   last_round_name: string | null;
 }
 
+// ── VSOP ────────────────────────────────────────────────────
+
+export interface VsopPool {
+  id: string;
+  name: string;
+  total_shares: number;
+  share_class_id: string | null;
+  notes: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+export interface VsopGrant {
+  id: string;
+  stakeholder_id: string;
+  stakeholder_name: string | null;
+  shares_granted: number;
+  strike_price: number | null;
+  grant_date: string | null;
+  cliff_months: number;
+  vesting_months: number;
+  status: "active" | "terminated" | "fully_vested";
+  notes: string | null;
+  vested_shares: number;
+  unvested_shares: number;
+  vesting_pct: number;
+  cliff_met: boolean;
+  created_at: string | null;
+}
+
+export interface VsopSummary {
+  pool: VsopPool | null;
+  grants: VsopGrant[];
+  total_granted: number;
+  total_available: number;
+  total_vested: number;
+  total_unvested: number;
+  pool_utilization_pct: number;
+  overall_vesting_pct: number;
+}
+
 export interface LegalDocument {
   id: string;
   title: string;
@@ -411,6 +452,101 @@ export interface CompanyLegal {
   notes: string | null;
   created_at: string | null;
   updated_at: string | null;
+}
+
+// ── Finance ─────────────────────────────────────────────────
+
+export interface TreasuryAccount {
+  id: string;
+  holded_id: string;
+  name: string;
+  account_type: string;
+  balance: number;
+  iban: string | null;
+  currency: string;
+}
+
+export interface MonthlySummary {
+  year_month: string;
+  income: number;
+  expenses: number;
+  net: number;
+  is_forecast: boolean;
+  projected_cash?: number;
+}
+
+export interface ExpenseCategory {
+  category: string;
+  contact_name?: string | null;
+  total: number;
+  transaction_count: number;
+}
+
+export interface BurnRates {
+  three_month: number;
+  six_month: number;
+  twelve_month: number;
+}
+
+export interface ForecastSettings {
+  monthly_burn: number;
+  monthly_income: number;
+}
+
+export interface RunwayScenarios {
+  worst: number | null;
+  current: number | null;
+  best: number | null;
+  forecast: number | null;
+}
+
+export interface FinanceKPIs {
+  cash_position: number;
+  monthly_burn: number;
+  monthly_income: number;
+  runway_months: number | null;
+  runway_scenarios: RunwayScenarios;
+  net_last_month: number;
+  burn_rates: BurnRates;
+}
+
+export interface FinanceDashboard {
+  kpis: FinanceKPIs;
+  monthly_summary: MonthlySummary[];
+  expense_breakdown: ExpenseCategory[];
+  income_sources: ExpenseCategory[];
+  treasury_accounts: TreasuryAccount[];
+  last_synced: string | null;
+  forecast: ForecastSettings;
+}
+
+export interface HoldedConnectionTest {
+  success: boolean;
+  message: string;
+  accounts_found: number;
+}
+
+export interface SyncStatus {
+  status: string;
+  step: string;
+  progress: number;
+}
+
+export interface CategoryRule {
+  id: string;
+  contact_name: string;
+  category: string;
+  is_auto: boolean;
+}
+
+export interface PlannedExpense {
+  id: string;
+  name: string;
+  category: string;
+  amount: number;
+  quarter: string | null;
+  is_recurring: boolean;
+  notes: string | null;
 }
 
 // ── CEO Suggestions ─────────────────────────────────────────

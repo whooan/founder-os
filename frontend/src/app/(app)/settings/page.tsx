@@ -9,6 +9,7 @@ import {
   User,
   RefreshCw,
   Clock,
+  Landmark,
 } from "lucide-react";
 import {
   Card,
@@ -33,6 +34,7 @@ import {
   updateSettings,
   triggerUpdateNow,
 } from "@/lib/api/settings";
+import { testHoldedConnection } from "@/lib/api/finance";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
@@ -57,6 +59,13 @@ export default function SettingsPage() {
   const [lastDailyUpdate, setLastDailyUpdate] = useState<string | null>(null);
   const [triggering, setTriggering] = useState(false);
 
+  // Holded state
+  const [holdedKey, setHoldedKey] = useState("");
+  const [holdedMasked, setHoldedMasked] = useState("");
+  const [holdedConfigured, setHoldedConfigured] = useState(false);
+  const [showHoldedKey, setShowHoldedKey] = useState(false);
+  const [testingHolded, setTestingHolded] = useState(false);
+
   useEffect(() => {
     fetchSettings()
       .then((data) => {
@@ -68,6 +77,8 @@ export default function SettingsPage() {
         setAutoUpdateEnabled(data.auto_update_enabled);
         setAutoUpdateHour(data.auto_update_hour);
         setLastDailyUpdate(data.last_daily_update);
+        setHoldedMasked(data.holded_api_key_masked);
+        setHoldedConfigured(data.holded_configured);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -84,6 +95,7 @@ export default function SettingsPage() {
         openai_model?: string;
         auto_update_enabled?: boolean;
         auto_update_hour?: number;
+        holded_api_key?: string;
       } = {
         founder_name: founderName,
         org_name: orgName,
@@ -94,13 +106,19 @@ export default function SettingsPage() {
       if (apiKey) {
         update.openai_api_key = apiKey;
       }
+      if (holdedKey) {
+        update.holded_api_key = holdedKey;
+      }
       const data = await updateSettings(update);
       setMaskedKey(data.openai_api_key_masked);
       setIsConfigured(data.is_configured);
       setAutoUpdateEnabled(data.auto_update_enabled);
       setAutoUpdateHour(data.auto_update_hour);
       setLastDailyUpdate(data.last_daily_update);
+      setHoldedMasked(data.holded_api_key_masked);
+      setHoldedConfigured(data.holded_configured);
       setApiKey("");
+      setHoldedKey("");
       setMessage({ type: "success", text: "Settings saved successfully." });
     } catch {
       setMessage({ type: "error", text: "Failed to save settings." });
@@ -247,6 +265,85 @@ export default function SettingsPage() {
               through the API.
             </p>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Holded Integration */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Landmark className="h-5 w-5 text-muted-foreground" />
+              <div>
+                <CardTitle>Holded Integration</CardTitle>
+                <CardDescription>
+                  Connect your Holded account to sync bank movements and treasury data.
+                </CardDescription>
+              </div>
+            </div>
+            <Badge variant={holdedConfigured ? "default" : "destructive"}>
+              {holdedConfigured ? "Configured" : "Not Configured"}
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">API Key</label>
+            {holdedConfigured && !holdedKey && (
+              <p className="text-sm text-muted-foreground">
+                Current key: <code className="text-xs">{holdedMasked}</code>
+              </p>
+            )}
+            <div className="relative">
+              <Input
+                type={showHoldedKey ? "text" : "password"}
+                placeholder={
+                  holdedConfigured ? "Enter new key to update..." : "Your Holded API key"
+                }
+                value={holdedKey}
+                onChange={(e) => setHoldedKey(e.target.value)}
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowHoldedKey(!showHoldedKey)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                {showHoldedKey ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </button>
+            </div>
+          </div>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={async () => {
+              setTestingHolded(true);
+              try {
+                const result = await testHoldedConnection();
+                setMessage({
+                  type: result.success ? "success" : "error",
+                  text: result.message,
+                });
+              } catch {
+                setMessage({ type: "error", text: "Failed to test Holded connection." });
+              } finally {
+                setTestingHolded(false);
+              }
+            }}
+            disabled={testingHolded || !holdedConfigured}
+          >
+            {testingHolded ? (
+              <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Landmark className="mr-2 h-3.5 w-3.5" />
+            )}
+            Test Connection
+          </Button>
         </CardContent>
       </Card>
 

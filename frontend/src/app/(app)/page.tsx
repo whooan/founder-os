@@ -19,6 +19,7 @@ import {
   MapPin,
   UsersRound,
   RefreshCw,
+  PieChart,
 } from "lucide-react";
 import {
   Card,
@@ -38,6 +39,13 @@ import { fetchEvents } from "@/lib/api/events";
 import type { CompanyDetail, TimelineEvent } from "@/types";
 
 const quickActions = [
+  {
+    href: "/capital",
+    label: "Cap Table",
+    description: "Ownership & equity rounds",
+    icon: PieChart,
+    color: "text-pink-600 bg-pink-500/10",
+  },
   {
     href: "/ask",
     label: "Ask anything",
@@ -274,7 +282,7 @@ export default function DashboardPage() {
           {/* Quick Actions */}
           <div>
             <h3 className="text-sm font-semibold text-muted-foreground mb-3">Quick Actions</h3>
-            <div className="grid gap-3 grid-cols-2 lg:grid-cols-5">
+            <div className="grid gap-3 grid-cols-2 lg:grid-cols-6">
               {quickActions.map((action) => (
                 <Link key={action.href} href={action.href}>
                   <Card className="h-full hover:bg-accent/50 transition-colors cursor-pointer">

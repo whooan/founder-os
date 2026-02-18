@@ -11,6 +11,8 @@ from app.api.legal import router as legal_router
 from app.api.market import router as market_router
 from app.api.settings import router as settings_router
 from app.api.suggestions import router as suggestions_router
+from app.api.finance import router as finance_router
+from app.api.vsop import router as vsop_router
 
 api_router = APIRouter()
 api_router.include_router(health_router, tags=["health"])
@@ -24,3 +26,5 @@ api_router.include_router(intelligence_router, prefix="/intelligence", tags=["in
 api_router.include_router(suggestions_router, prefix="/suggestions", tags=["suggestions"])
 api_router.include_router(captable_router, prefix="/captable", tags=["captable"])
 api_router.include_router(legal_router, prefix="/legal", tags=["legal"])
+api_router.include_router(vsop_router, prefix="/vsop", tags=["vsop"])
+api_router.include_router(finance_router, prefix="/finance", tags=["finance"])

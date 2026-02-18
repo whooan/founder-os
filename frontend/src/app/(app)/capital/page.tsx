@@ -1,25 +1,20 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
 import {
   PieChart,
   TrendingUp,
   DollarSign,
   Users,
   Percent,
-  Landmark,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ShareClassManager } from "@/components/capital/share-class-manager";
 import { CapTableView } from "@/components/capital/cap-table-view";
 import { CapTableEvolution } from "@/components/capital/cap-table-evolution";
-import { ShareClassManager } from "@/components/capital/share-class-manager";
-import { StakeholderTable } from "@/components/capital/stakeholder-table";
-import { DocumentsTable } from "@/components/capital/documents-table";
-import { CompanyInfoForm } from "@/components/capital/company-info-form";
-import { fetchCompanies } from "@/lib/api/companies";
+import { usePrimaryCompany } from "@/hooks/use-primary-company";
+import { useCallback, useEffect, useState } from "react";
 import { fetchCapTableKPIs } from "@/lib/api/captable";
-import type { Company, CapTableKPIs } from "@/types";
+import type { CapTableKPIs } from "@/types";
 
 function formatCurrency(n: number | null): string {
   if (!n) return "—";
@@ -28,10 +23,9 @@ function formatCurrency(n: number | null): string {
   return `€${n.toLocaleString()}`;
 }
 
-export default function CapitalPage() {
-  const [primaryCompany, setPrimaryCompany] = useState<Company | null>(null);
+export default function CapTablePage() {
+  const { company, loading } = usePrimaryCompany();
   const [kpis, setKpis] = useState<CapTableKPIs | null>(null);
-  const [loading, setLoading] = useState(true);
 
   const loadKpis = useCallback(async (companyId: string) => {
     const data = await fetchCapTableKPIs(companyId);
@@ -39,14 +33,8 @@ export default function CapitalPage() {
   }, []);
 
   useEffect(() => {
-    fetchCompanies()
-      .then((companies) => {
-        const primary = companies.find((c) => c.is_primary) ?? companies[0] ?? null;
-        setPrimaryCompany(primary);
-        if (primary) loadKpis(primary.id);
-      })
-      .finally(() => setLoading(false));
-  }, [loadKpis]);
+    if (company) loadKpis(company.id);
+  }, [company, loadKpis]);
 
   if (loading) {
     return (
@@ -56,7 +44,7 @@ export default function CapitalPage() {
     );
   }
 
-  if (!primaryCompany) {
+  if (!company) {
     return (
       <div className="flex flex-col items-center justify-center h-64 gap-3 text-muted-foreground">
         <PieChart className="h-10 w-10" />
@@ -99,13 +87,10 @@ export default function CapitalPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Landmark className="h-6 w-6" />
-          Capital
-        </h1>
+        <h1 className="text-2xl font-bold">Cap Table</h1>
         <p className="text-sm text-muted-foreground">
-          Cap table, equity holders, legal documents & company info for{" "}
-          <span className="font-medium text-foreground">{primaryCompany.name}</span>
+          Ownership structure for{" "}
+          <span className="font-medium text-foreground">{company.name}</span>
         </p>
       </div>
 
@@ -129,32 +114,9 @@ export default function CapitalPage() {
         ))}
       </div>
 
-      <Tabs defaultValue="captable" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="captable">Cap Table</TabsTrigger>
-          <TabsTrigger value="stakeholders">Stakeholders</TabsTrigger>
-          <TabsTrigger value="documents">Documents</TabsTrigger>
-          <TabsTrigger value="company-info">Company Info</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="captable" className="space-y-6">
-          <ShareClassManager companyId={primaryCompany.id} />
-          <CapTableView companyId={primaryCompany.id} />
-          <CapTableEvolution companyId={primaryCompany.id} />
-        </TabsContent>
-
-        <TabsContent value="stakeholders">
-          <StakeholderTable companyId={primaryCompany.id} />
-        </TabsContent>
-
-        <TabsContent value="documents">
-          <DocumentsTable companyId={primaryCompany.id} />
-        </TabsContent>
-
-        <TabsContent value="company-info">
-          <CompanyInfoForm companyId={primaryCompany.id} />
-        </TabsContent>
-      </Tabs>
+      <ShareClassManager companyId={company.id} />
+      <CapTableView companyId={company.id} />
+      <CapTableEvolution companyId={company.id} />
     </div>
   );
 }

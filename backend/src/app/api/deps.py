@@ -8,6 +8,7 @@ from app.services.founder_service import FounderService
 from app.services.captable_service import CapTableService
 from app.services.legal_service import LegalService
 from app.services.market_service import MarketService
+from app.services.vsop_service import VsopService
 
 
 async def get_db(
@@ -50,3 +51,9 @@ async def get_legal_service(
     session: AsyncSession = Depends(get_session),
 ) -> LegalService:
     return LegalService(session)
+
+
+async def get_vsop_service(
+    session: AsyncSession = Depends(get_session),
+) -> VsopService:
+    return VsopService(session)
