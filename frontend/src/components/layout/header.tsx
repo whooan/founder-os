@@ -1,9 +1,10 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { Search } from "lucide-react";
+import { Search, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useState } from "react";
 
 const pageTitles: Record<string, string> = {
   "/": "Home",
@@ -28,6 +29,18 @@ interface HeaderProps {
 export function Header({ onOpenCommandMenu }: HeaderProps) {
   const pathname = usePathname();
   const title = getPageTitle(pathname);
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    setLoggingOut(true);
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+      // Hard redirect — clears all cached React state and page data
+      window.location.href = "/login";
+    } catch {
+      setLoggingOut(false);
+    }
+  };
 
   return (
     <header className="flex h-14 items-center justify-between border-b border-border px-6">
@@ -50,6 +63,16 @@ export function Header({ onOpenCommandMenu }: HeaderProps) {
           <kbd className="pointer-events-none hidden h-5 items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground sm:inline-flex">
             <span className="text-xs">&#8984;</span>K
           </kbd>
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleLogout}
+          disabled={loggingOut}
+          className="gap-2"
+        >
+          <LogOut className="h-4 w-4" />
+          <span className="hidden sm:inline">Logout</span>
         </Button>
       </div>
     </header>
